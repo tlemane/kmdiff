@@ -39,4 +39,4 @@
 /env_kmsv/
 
 /data/
-./tests/kmdiff-tests
+/tests/kmdiff-tests
