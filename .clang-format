@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+AlignAfterOpenBracket: AlwaysBreak
+AlwaysBreakTemplateDeclarations: 'Yes'
+BinPackArguments: 'true'
+BinPackParameters: 'false'
+BreakBeforeBraces: Allman
+ColumnLimit: '100'
+PointerAlignment: Left
