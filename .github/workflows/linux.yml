@@ -1,6 +1,13 @@
 name: linux
 
-on: [push]
+on:
+  push:
+    paths:
+      - '!README.md'
+      - '!docker/**'
+      - '!conda/**'
+      - '!scripts/**'
+      - '!.gitignore'
 
 env:
   BUILD_TYPE: Release
