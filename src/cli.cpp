@@ -183,7 +183,7 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->checker(bc::check::is_number)
       ->setter(options->nb_cases);
 
-  diff_cmd->add_param("-p/--p-value", "p-value threshold.")
+  diff_cmd->add_param("--significance", "Significance threshold.")
       ->meta("FLOAT")
       ->checker(bc::check::is_number)
       ->checker(bc::check::f::range(0.0, 1.0))
@@ -196,7 +196,7 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
     else
       options->correction = CorrectionType::NOTHING;
   };
-  diff_cmd->add_param("-c/--correction", "p-value correction.")
+  diff_cmd->add_param("-c/--correction", "Significance correction.")
       ->meta("STR")
       ->def("bonf")
       ->checker(bc::check::f::in("bonf|nothing"))
@@ -380,7 +380,7 @@ kmdiff_options_t call_cli(std::shared_ptr<bc::Parser<1>> cli, call_options_t opt
           ->checker(bc::check::seems_fastx)->checker(bc::check::is_file)
           ->setter(options->reference);
 
-  call_cmd->add_param("-i/--input", fmt::format("Output directory of {} diff.", PROJECT_NAME))
+  call_cmd->add_param("-d/--diff-dir", fmt::format("Output directory of {} diff.", PROJECT_NAME))
            ->meta("DIR")
            ->checker(bc::check::is_dir)
            ->setter(options->directory);
