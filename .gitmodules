@@ -1,0 +1,33 @@
+[submodule "thirdparty/bcli"]
+	path = thirdparty/bcli
+	url = http://github.com/tlemane/bcli
+[submodule "thirdparty/kmtricks"]
+	path = thirdparty/kmtricks
+	url = http://github.com/tlemane/kmtricks
+[submodule "thirdparty/fmt"]
+	path = thirdparty/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "thirdparty/googletest"]
+	path = thirdparty/googletest
+	url = https://github.com/google/googletest
+[submodule "thirdparty/spdlog"]
+	path = thirdparty/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "thirdparty/robin-hood-hashing"]
+	path = thirdparty/robin-hood-hashing
+	url = https://github.com/martinus/robin-hood-hashing
+[submodule "thirdparty/xxHash"]
+	path = thirdparty/xxHash
+	url = https://github.com/Cyan4973/xxHash
+[submodule "thirdparty/lz4"]
+	path = thirdparty/lz4
+	url = https://github.com/lz4/lz4
+[submodule "thirdparty/kff-cpp-api"]
+	path = thirdparty/kff-cpp-api
+	url = https://github.com/kmer-file-format/kff-cpp-api
+[submodule "thirdparty/kseqpp"]
+	path = thirdparty/kseqpp
+	url = https://github.com/cartoonist/kseqpp
+[submodule "thirdparty/wgsim"]
+	path = thirdparty/wgsim
+	url = https://github.com/tlemane/wgsim
