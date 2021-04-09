@@ -1,0 +1,115 @@
+#include <gtest/gtest.h>
+#define private public
+#include <kmdiff/kmer.hpp>
+#include <kmdiff/accumulator.hpp>
+
+using namespace kmdiff;
+
+TEST(accumulator, VectorAccumulator)
+{
+  acc_t<int> acc = std::make_shared<VectorAccumulator<int>>(100);
+  std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  for (auto& e : v) 
+    acc->push(std::move(e));
+  
+  acc->finish();
+
+  EXPECT_EQ(acc->size(), v.size());
+
+  int i = 0;
+  while (const std::optional<int>&o = acc->get())
+  {
+    EXPECT_EQ(*o, v[i]);
+    i++;
+  }
+}
+
+TEST(accumulator, SetAccumulator)
+{
+  acc_t<int> acc = std::make_shared<SetAccumulator<int>>(100);
+  std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  for (auto& e : v) 
+    acc->push(std::move(e));
+  
+  acc->finish();
+  
+  EXPECT_EQ(acc->size(), v.size());
+
+  int i = 0;
+  while (const std::optional<int>&o = acc->get())
+  {
+    EXPECT_TRUE(std::find(v.begin(), v.end(), *o) != v.end());
+    i++;
+  }
+}
+
+TEST(accumulator, FileAccumulator)
+{
+  acc_t<int> acc = std::make_shared<FileAccumulator<int>>("acc.txt.lz4");
+  std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  for (auto e : v) 
+    acc->push(std::move(e));
+  
+  acc->finish();
+  
+  EXPECT_EQ(acc->size(), v.size());
+
+  int i = 0; 
+  while (const std::optional<int>&o = acc->get())
+  {
+    EXPECT_EQ(*o, v[i]);
+    i++;
+  }
+}
+
+TEST(accumulator, KmerSignVec)
+{
+  using kmer_sign_t = KmerSign<32>;
+  acc_t<kmer_sign_t> acc = std::make_shared<VectorAccumulator<kmer_sign_t>>(100);
+
+  std::vector<kmer_sign_t> v;
+  for (size_t i=0; i<10; i++)
+  {
+    std::string r = random_dna_seq(20);
+    Kmer<32> kmer(r);
+    KmerSign<32> kmer_sign(std::move(kmer), 0.01, Significance::CONTROL);
+    v.push_back(kmer_sign);
+    EXPECT_EQ(r, kmer_sign.m_kmer.to_string());
+  }
+  for (auto e : v)
+    acc->push(std::move(e));
+  
+  acc->finish();
+  int i = 0;
+  while (const std::optional<kmer_sign_t>&o = acc->get())
+  {
+    EXPECT_EQ(*o, v[i]);
+    i++;
+  }
+}
+
+TEST(accumulator, KmerFile)
+{
+  acc_t<Kmer<32>> acc = std::make_shared<FileAccumulator<Kmer<32>>>("./test.out", 20);
+  
+  std::vector<std::string> s;
+  std::vector<Kmer<32>> v;
+  for (size_t i=0; i<10; i++)
+  {
+    s.push_back(random_dna_seq(20));
+    v.push_back(Kmer<32>(s[i]));
+    EXPECT_EQ(s[i], v[i].to_string());
+  }
+
+  for (auto e : v)
+    acc->push(std::move(e));
+
+  acc->finish();
+
+  int i = 0;
+  while (const std::optional<Kmer<32>>&o = acc->get())
+  {
+    EXPECT_EQ(*o, v[i]);
+    i++;
+  }
+}
