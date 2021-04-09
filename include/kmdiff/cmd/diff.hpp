@@ -38,6 +38,7 @@
 #include <kmdiff/model.hpp>
 #include <kmdiff/threadpool.hpp>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/kff_utils.hpp>
 
 namespace kmdiff
 {
@@ -50,6 +51,7 @@ struct diff_options : kmdiff_options
   double threshold;
   CorrectionType correction;
   bool in_memory;
+  bool kff;
 
   std::string display()
   {
@@ -62,6 +64,7 @@ struct diff_options : kmdiff_options
     RECORD(ss, threshold);
     RECORD(ss, correction_type_str(correction));
     RECORD(ss, in_memory);
+    RECORD(ss, kff);
     return ss.str();
   }
 };

@@ -202,7 +202,11 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->checker(bc::check::f::in("bonf|nothing"))
       ->setter_c(corr_setter);
 
-  diff_cmd->add_param("--in-memory", "perform correction in memory.")
+  diff_cmd->add_param("--kff-output", "Output significant k-mers in kff format.")
+      ->as_flag()
+      ->setter(options->kff);
+
+  diff_cmd->add_param("--in-memory", "Perform correction in memory.")
       ->as_flag()
       ->setter(options->in_memory);
 

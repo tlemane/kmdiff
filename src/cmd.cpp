@@ -125,50 +125,96 @@ void main_diff(kmdiff_options_t options)
     pool.add_task(task);
   }
 
-  std::string control_out_file = fmt::format("{}/control_kmers.fasta", opt->output_directory);
-  auto control_consumer = std::thread([&control_queue, &control_out_file, corrector]() {
+  using seq_out_t = std::unique_ptr<klibpp::SeqStreamOut>;
+
+  std::string ext = opt->kff ? ".kff" : ".fasta";
+  
+  std::string control_out = fmt::format("{}/control_kmers{}", opt->output_directory, ext);
+  auto control_consumer = std::thread([&control_queue, &control_out, corrector, &opt, &config]() {
     KmerSign<DEF_MAX_KMER> k;
     klibpp::KSeq record;
-    klibpp::SeqStreamOut out(control_out_file.c_str());
+    seq_out_t out = nullptr;
+    kff_t out_kff = nullptr;
+    kff_raw_t out_sec = nullptr;
+
+    if (opt->kff)
+    {
+      out_kff = get_kff(control_out);
+      write_section(out_kff, config.kmer_size);
+      out_sec = get_raw_section(out_kff);
+    }
+    else
+      out = std::make_unique<klibpp::SeqStreamOut>(control_out.c_str());
+
     size_t i = 0;
     while (control_queue.pop(k))
     {
-      bool keep = false;
+      bool keep = true;
       if (corrector) keep = corrector->apply(k.m_pvalue);
 
       if (keep)
       {
-        record.name = fmt::format("{}_pval={}_control={}_case={}",
+        if (!opt->kff)
+        {
+          record.name = fmt::format("{}_pval={}_control={}_case={}",
                                   i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
-        record.seq = k.m_kmer.to_string();
-        out << klibpp::format::fasta << record;
+          record.seq = k.m_kmer.to_string();
+          *out << klibpp::format::fasta << record;
+        }
+        else
+        {
+          write_kmer(out_sec, k, config.kmer_size);
+        }
       }
       i++;
     }
-    spdlog::info("Over-represented k-mers in controls dumped at {}", control_out_file);
+    if (out_sec) out_sec->close();
+    if (out_kff) out_kff->close();
+    spdlog::info("Over-represented k-mers in controls dumped at {}", control_out);
   });
 
-  std::string case_out_file = fmt::format("{}/case_kmers.fasta", opt->output_directory);
-  auto case_consumer = std::thread([&case_queue, &case_out_file, corrector]() {
+  std::string case_out = fmt::format("{}/case_kmers{}", opt->output_directory, ext);
+  auto case_consumer = std::thread([&case_queue, &case_out, corrector, &opt, &config]() {
     KmerSign<DEF_MAX_KMER> k;
     klibpp::KSeq record;
-    klibpp::SeqStreamOut out(case_out_file.c_str());
+    seq_out_t out = nullptr;
+    kff_t out_kff = nullptr;
+    kff_raw_t out_sec = nullptr;
+
+    if (opt->kff)
+    {
+      out_kff = get_kff(case_out);
+      write_section(out_kff, config.kmer_size);
+      out_sec = get_raw_section(out_kff);
+    }
+    else
+      out = std::make_unique<klibpp::SeqStreamOut>(case_out.c_str());
+    
     size_t i = 0;
     while (case_queue.pop(k))
     {
-      bool keep = false;
+      bool keep = true;
       if (corrector) keep = corrector->apply(k.m_pvalue);
 
       if (keep)
       {
-        record.name = fmt::format("{}_pval={}_control={}_case={}",
+        if (!opt->kff)
+        {
+          record.name = fmt::format("{}_pval={}_control={}_case={}",
                                   i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
-        record.seq = k.m_kmer.to_string();
-        out << klibpp::format::fasta << record;
+          record.seq = k.m_kmer.to_string();
+          *out << klibpp::format::fasta << record;
+        }
+        else
+        {
+          write_kmer(out_sec, k, config.kmer_size);
+        }
       }
       i++;
     }
-    spdlog::info("Over-represented k-mers in cases dumped at {}", case_out_file);
+    if (out_sec) out_sec->close();
+    if (out_kff) out_kff->close();
+    spdlog::info("Over-represented k-mers in cases dumped at {}", case_out);
   });
 
   pool.join_all();
