@@ -23,13 +23,14 @@ import platform
 
 py_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(py_path+'/..')
-from kmtricks import __version__ as kmtricks_version
+
+kmdiff_version = "0.0.1"
 
 system = platform.system()
 
 LINUX, OSX = system == 'Linux', system == 'Darwin'
 
-PACKAGE_NAME = f'kmdiff-{kmtricks_version}-bin-{system}.tar.gz'
+PACKAGE_NAME = f'kmdiff-{kmdiff_version}-bin-{system}.tar.gz'
 PACKAGE_PATH = f'{py_path}/../build/{PACKAGE_NAME}'
 try:
     d = sys.argv[1]
@@ -43,7 +44,7 @@ GH_TOKEN = os.environ['GH_TOKEN']
 
 BUILD_INFO = ''
 
-release_desc_path = f'{py_path}/../doc/releases/desc-{kmtricks_version}.txt'
+release_desc_path = f'{py_path}/../doc/releases/desc-{kmdiff_version}.txt'
 if os.path.exists(release_desc_path):
     with open(release_desc_path, 'r') as desc_in:
         BUILD_INFO = desc_in.read()
@@ -63,7 +64,7 @@ try:
 except:
     pass
 
-CURRENT_VERSION = list(map(int, kmtricks_version.split('.')))
+CURRENT_VERSION = list(map(int, kmdiff_version.split('.')))
 
 print(BUILD_INFO)
 print(system)
@@ -75,8 +76,8 @@ if not CURRENT_VERSION == [0, 0, 0]:
     if CURRENT_VERSION > LATEST_VERSION or not LATEST_VERSION:
         if PACKAGE_EXISTS:
             release = lz4_repo.create_git_release(
-                f'v{kmtricks_version}',
-                f'Release v{kmtricks_version}',
+                f'v{kmdiff_version}',
+                f'Release v{kmdiff_version}',
                 BUILD_INFO, False, prerelease=False)
             release.upload_asset(PACKAGE_PATH)
         else:
