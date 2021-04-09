@@ -13,13 +13,13 @@ endforeach()
 
 add_format_project_target("${PROJECT_FILES}")
 
-add_library(kmsv ${CPP_FILES})
-add_dependencies(kmsv ${DEPS})
+add_library(kmdifflib ${CPP_FILES})
+add_dependencies(kmdifflib ${DEPS})
 
 add_executable(${PROJECT_NAME} main.cpp)
 add_dependencies(${PROJECT_NAME} ${DEPS})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDES})
-target_link_libraries(${PROJECT_NAME} ZLIB::ZLIB kmsv)
+target_link_libraries(${PROJECT_NAME} ZLIB::ZLIB kmdifflib)
 
 if (NOT APPLE)
   target_link_options(${PROJECT_NAME} PUBLIC -export-dynamic)
