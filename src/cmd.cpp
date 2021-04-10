@@ -362,5 +362,64 @@ void main_call(kmdiff_options_t options)
   
   spdlog::info("Mapping done ({} seconds).",
                 call_timer.elapsed<std::chrono::seconds>().count());
+
+  std::string samtools_bin = command_exists(get_binary_dir(), "samtools");
+  std::string view_args = "{} -S -b -o {} {}";
+  std::string sort_args = "{} {} -o {}";
+  std::string index_args = "{} {} {}.bai";
+
+  spdlog::info("Convert control sam to bam...");
+  std::string control_bam = fmt::format("{}/control_kmers.bam", output_directory);
+  std::string control_bam_sorted = fmt::format("{}/control_kmers_sorted.bam", output_directory);
+  //exec_external_cmd(samtools_bin, fmt::format(view_args, "view", control_bam, control_output));
+  exec_external_cmd(samtools_bin, fmt::format(sort_args, "sort", control_output, control_bam_sorted));
+  //exec_external_cmd(samtools_bin, fmt::format(index_args,
+  //                                            "index",
+  //                                            control_bam_sorted,
+  //                                            control_bam_sorted));
+  spdlog::info("Done.");
+  
+  spdlog::info("Convert case sam to bam...");
+  std::string case_bam = fmt::format("{}/case_kmers.bam", output_directory);
+  std::string case_bam_sorted = fmt::format("{}/case_kmers_sorted.bam", output_directory);
+  //exec_external_cmd(samtools_bin, fmt::format(view_args, "view", case_bam, case_output));
+  exec_external_cmd(samtools_bin, fmt::format(sort_args, "sort", case_output, case_bam_sorted));
+  //exec_external_cmd(samtools_bin, fmt::format(index_args,
+  //                                            "index",
+  //                                            case_bam_sorted,
+  //                                            case_bam_sorted));
+  spdlog::info("Done.");
+
+  //spdlog::info("Create gatk bwa image...");
+  //std::string gatk_bin = command_exists(get_binary_dir(), "gatk");
+  //std::string bwa_img_args = "{} --input {} --output {}";
+  //std::string out_img = fmt::format("{}/ref.img", opt->directory);
+  //exec_external_cmd(gatk_bin, fmt::format(bwa_img_args,
+  //                                        "BwaMemIndexImageCreator",
+  //                                        opt->reference, out_img));
+
+  //spdlog::info("Prepare {}...", opt->reference);
+  //exec_external_cmd(samtools_bin, fmt::format("{} {}", "faidx", opt->reference));
+  //exec_external_cmd(gatk_bin, fmt::format("{} --REFERENCE {}",
+  //                                        "CreateSequenceDictionary",
+  //                                        opt->reference));
+
+  //std::string gatk_sv_args = "{} --input {} --reference {} --outputVCFName {}";
+  
+  //spdlog::info("Run gatk sv pipeline on control...");
+  //std::string control_vcf = fmt::format("{}/control.vcf", opt->directory);
+  //exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
+  //                                        "StructuralVariantDiscoverer",
+  //                                        control_bam_sorted,
+  //                                        opt->reference,
+  //                                        control_vcf));
+
+  //spdlog::info("Run gatk sv pipeline on case...");
+  //std::string case_vcf = fmt::format("{}/case.vcf", opt->directory);
+  //exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
+  //                                      "StructuralVariantDiscoverer",
+  //                                      case_bam_sorted,
+  //                                      opt->reference,
+  //                                      case_vcf));
 }
 };  // namespace kmdiff
