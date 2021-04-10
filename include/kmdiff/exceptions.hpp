@@ -46,6 +46,7 @@ class kmdiff_exception : public std::exception
 kmdiff_EXCEPTION(BinaryNotFound);
 kmdiff_EXCEPTION(ExternalExecFailed);
 kmdiff_EXCEPTION(KmtricksFileNotFound);
+kmdiff_EXCEPTION(FileNotFound);
 kmdiff_EXCEPTION(ConfigError);
 
 };  // namespace kmdiff

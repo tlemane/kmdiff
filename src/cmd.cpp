@@ -134,15 +134,10 @@ void main_diff(kmdiff_options_t options)
     KmerSign<DEF_MAX_KMER> k;
     klibpp::KSeq record;
     seq_out_t out = nullptr;
-    kff_t out_kff = nullptr;
-    kff_raw_t out_sec = nullptr;
+    kff_w_t out_kff = nullptr;
 
     if (opt->kff)
-    {
-      out_kff = get_kff(control_out);
-      write_section(out_kff, config.kmer_size);
-      out_sec = get_raw_section(out_kff);
-    }
+      out_kff = std::make_unique<KffWriter>(control_out, config.kmer_size);
     else
       out = std::make_unique<klibpp::SeqStreamOut>(control_out.c_str());
 
@@ -163,12 +158,11 @@ void main_diff(kmdiff_options_t options)
         }
         else
         {
-          write_kmer(out_sec, k, config.kmer_size);
+          out_kff->write(k);
         }
       }
       i++;
     }
-    if (out_sec) out_sec->close();
     if (out_kff) out_kff->close();
     spdlog::info("Over-represented k-mers in controls dumped at {}", control_out);
   });
@@ -178,15 +172,10 @@ void main_diff(kmdiff_options_t options)
     KmerSign<DEF_MAX_KMER> k;
     klibpp::KSeq record;
     seq_out_t out = nullptr;
-    kff_t out_kff = nullptr;
-    kff_raw_t out_sec = nullptr;
+    kff_w_t out_kff = nullptr;
 
     if (opt->kff)
-    {
-      out_kff = get_kff(case_out);
-      write_section(out_kff, config.kmer_size);
-      out_sec = get_raw_section(out_kff);
-    }
+      out_kff = std::make_unique<KffWriter>(case_out, config.kmer_size);
     else
       out = std::make_unique<klibpp::SeqStreamOut>(case_out.c_str());
     
@@ -207,12 +196,11 @@ void main_diff(kmdiff_options_t options)
         }
         else
         {
-          write_kmer(out_sec, k, config.kmer_size);
+          out_kff->write(k);
         }
       }
       i++;
     }
-    if (out_sec) out_sec->close();
     if (out_kff) out_kff->close();
     spdlog::info("Over-represented k-mers in cases dumped at {}", case_out);
   });
@@ -345,6 +333,8 @@ void main_call(kmdiff_options_t options)
   Timer control_time;
   spdlog::info("Map control k-mers...");
   std::string control_kmer = fmt::format("{}/control_kmers.fasta", opt->directory);
+  if (!fs::exists(control_kmer)) 
+    throw FileNotFound(fmt::format("{} not found.", control_kmer));
   std::string control_output = fmt::format("{}/control_kmers.sam", output_directory);
   std::string control_cmd = fmt::format(bbmap_align,
                                         control_kmer,
@@ -358,6 +348,8 @@ void main_call(kmdiff_options_t options)
   Timer case_time;
   spdlog::info("Map case k-mers...");
   std::string case_kmer = fmt::format("{}/case_kmers.fasta", opt->directory);
+  if (!fs::exists(case_kmer)) 
+    throw FileNotFound(fmt::format("{} not found.", case_kmer));
   std::string case_output = fmt::format("{}/control_kmers.sam", output_directory);
   std::string case_cmd = fmt::format(bbmap_align,
                                      case_kmer,
