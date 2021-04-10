@@ -1,0 +1,24 @@
+package:
+  name: kmdiff
+  version: "0.0.1"
+
+source:
+  git_url: https://github.com/tlemane/kmdiff
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - zlib
+    - make
+    - cmake
+    - gxx_linux-64=9.3
+
+  run:
+    - kmtricks>=0.0.6
+    - bbmap
+    - python>=3.6
+
+about:
+  home: https://github.com/tlemane/kmdiff
+  license: AGPL-3.0
+  doc_url: https://github.com/tlemane/kmdiff
