@@ -1,0 +1,12 @@
+name: kmdiff-env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - tlemane
+  - tlemane/label/dev
+dependencies:
+  - kmdiff
+  - pandas
+  - matplotlib
+  - r-base
