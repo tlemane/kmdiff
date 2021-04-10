@@ -40,3 +40,5 @@
 
 /data/
 /tests/kmdiff-tests
+/tests/workflows
+/kmdiff-env
