@@ -63,7 +63,7 @@ TEST(accumulator, SetAccumulator)
 
 TEST(accumulator, FileAccumulator)
 {
-  acc_t<int> acc = std::make_shared<FileAccumulator<int>>("acc.txt.lz4");
+  acc_t<int> acc = std::make_shared<FileAccumulator<int>>("./tests_tmp/acc.txt.lz4");
   std::vector<int> v {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   for (auto e : v) 
     acc->push(std::move(e));
@@ -108,7 +108,7 @@ TEST(accumulator, KmerSignVec)
 
 TEST(accumulator, KmerFile)
 {
-  acc_t<Kmer<32>> acc = std::make_shared<FileAccumulator<Kmer<32>>>("./test.out", 20);
+  acc_t<Kmer<32>> acc = std::make_shared<FileAccumulator<Kmer<32>>>("./tests_tmp/test.out", 20);
   
   std::vector<std::string> s;
   std::vector<Kmer<32>> v;

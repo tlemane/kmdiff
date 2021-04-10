@@ -1,0 +1,8 @@
+[INFO] - Fof path:          ./data/fof.txt
+[INFO] - Kmer size:         20
+[INFO] - Abundance min/max: 1 3000000000
+[INFO] - Nb partitions:     4
+[INFO] - Max hash / hasher: 1000000000 xor
+[INFO] - Window size:       250000008
+[INFO] - Minimizer size:    10
+[INFO] - SHA1:              5288439

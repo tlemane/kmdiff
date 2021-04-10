@@ -63,13 +63,13 @@ TEST(kmer, serialize)
 
   {
     std::shared_ptr<std::ofstream> out =
-      std::make_shared<std::ofstream>("test.out", std::ios::out | std::ios::binary);
+      std::make_shared<std::ofstream>("tests_tmp/test.out", std::ios::out | std::ios::binary);
     kmer.dump(out);
   }
   {
     Kmer<32> k;
     std::shared_ptr<std::ifstream> in =
-      std::make_shared<std::ifstream>("test.out", std::ios::in | std::ios::binary);
+      std::make_shared<std::ifstream>("tests_tmp/test.out", std::ios::in | std::ios::binary);
     k.load(in, 20);
     EXPECT_EQ(kmer, k);
   }
@@ -84,7 +84,7 @@ TEST(kmer, serialize_lz4)
     v.push_back(Kmer<32>(random_dna_seq(20)));
 
   {
-    std::ofstream out_n("test.out.lz4", std::ios::out | std::ios::binary);
+    std::ofstream out_n("tests_tmp/test.out.lz4", std::ios::out | std::ios::binary);
     std::shared_ptr<lz4_stream::basic_ostream<4096>> out =
       std::make_shared<lz4_stream::basic_ostream<4096>>(out_n);
     for (auto& kmer: v) kmer.dump(out);
@@ -93,7 +93,7 @@ TEST(kmer, serialize_lz4)
     Kmer<32> k;
     std::shared_ptr<lz4_stream::basic_istream<4096>> in =
       std::make_shared<lz4_stream::basic_istream<4096>>(
-         "test.out.lz4");
+         "tests_tmp/test.out.lz4");
     for (auto& kmer : v)
     {
       k.load(in, 20);
@@ -121,13 +121,13 @@ TEST(kmerSign, serial)
 
   {
     std::shared_ptr<std::ofstream> out =
-      std::make_shared<std::ofstream>("test2.out", std::ios::out | std::ios::binary);
+      std::make_shared<std::ofstream>("./tests_tmp/test2.out", std::ios::out | std::ios::binary);
     kmer_sign.dump(out);
   }
   {
     KmerSign<32> k;
     std::shared_ptr<std::ifstream> in =
-      std::make_shared<std::ifstream>("test2.out", std::ios::in | std::ios::binary);
+      std::make_shared<std::ifstream>("tests_tmp/test2.out", std::ios::in | std::ios::binary);
     k.load(in, 20);
     EXPECT_EQ(kmer_sign, k);
   }
@@ -140,7 +140,7 @@ TEST(kmerSign, serial_lz4)
   KmerSign<32> kmer_sign(std::move(kmer), 0.01, Significance::CONTROL);
 
   {
-    std::ofstream out_n("test2.out.lz4", std::ios::out | std::ios::binary);
+    std::ofstream out_n("./tests_tmp/test2.out.lz4", std::ios::out | std::ios::binary);
     std::shared_ptr<lz4_stream::basic_ostream<4096>> out =
       std::make_shared<lz4_stream::basic_ostream<4096>>(out_n);
     kmer_sign.dump(out);
@@ -148,7 +148,7 @@ TEST(kmerSign, serial_lz4)
   {
     KmerSign<32> k;
     std::shared_ptr<lz4_stream::basic_istream<4096>> in =
-      std::make_shared<lz4_stream::basic_istream<4096>>("test2.out.lz4");
+      std::make_shared<lz4_stream::basic_istream<4096>>("tests_tmp/test2.out.lz4");
     k.load(in, 20);
     EXPECT_EQ(kmer_sign, k);
   }
