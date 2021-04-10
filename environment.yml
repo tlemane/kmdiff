@@ -10,3 +10,5 @@ dependencies:
   - pandas
   - matplotlib
   - r-base
+  - samtools
+  - gatk4
