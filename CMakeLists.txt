@@ -122,3 +122,12 @@ if (COMPILE_TESTS)
 else()
   add_dependencies(end ${PROJECT_NAME})
 endif()
+
+if (BUILD_KMTRICKS_FULL)
+  add_custom_target(
+    copy_km
+    COMMAND cp ./thirdparty/kmtricks/bin/km* ./bin
+    COMMAND cp ./thirdparty/kmtricks/kmtricks.py ./bin
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+  add_dependencies(copy_km KMTRICKS)
+endif()
