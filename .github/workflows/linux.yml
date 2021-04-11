@@ -36,7 +36,13 @@ jobs:
       - name: Test
         shell: bash
         working-directory: ${{runner.workspace}}/build
-        run: ctest -C $BUILD_TYPE --verbose
+        run: ctest -C $BUILD_TYPE --verbose ; make gcov
+
+      - name: Coverage
+        uses: codecov/codecov-action@v1.0.3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{runner.workspace}}/build/tests/CMakeFiles/kmdiff-tests.dir/rapport_filter.info
 
       - name: Package
         shell: bash
