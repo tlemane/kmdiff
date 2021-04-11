@@ -210,6 +210,7 @@ inline char significance_to_char(Significance sign)
 template <size_t MAX_K>
 class KmerSign
 {
+  friend struct std::hash<KmerSign<MAX_K>>;
  public:
   KmerSign(Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
            double mean_control = 0, double mean_case = 0)
@@ -248,16 +249,6 @@ class KmerSign
   Significance m_sign{Significance::NO};
 };
 
-template <size_t MAX_K>
-class KmerCounts
-{
-  friend struct std::hash<KmerCounts<MAX_K>>;
-
- private:
-  Kmer<MAX_K> kmer;
-  std::vector<uint32_t> counts;
-};
-
 };  // namespace kmdiff
 
 template <size_t MAX_K>
@@ -270,10 +261,10 @@ struct std::hash<kmdiff::Kmer<MAX_K>>
 };
 
 template <size_t MAX_K>
-struct std::hash<kmdiff::KmerCounts<MAX_K>>
+struct std::hash<kmdiff::KmerSign<MAX_K>>
 {
-  uint64_t operator()(const kmdiff::KmerCounts<MAX_K>& KC) const noexcept
+  uint64_t operator()(const kmdiff::KmerSign<MAX_K>& kmer) const noexcept
   {
-    return static_cast<uint64_t>(XXH64(KC.kmer.m_data8, sizeof(KC.kmer.m_data8), 0));
+    return static_cast<uint64_t>(XXH64(kmer.m_kmer.m_data8, sizeof(kmer.m_kmer.m_data8), 0));
   }
 };

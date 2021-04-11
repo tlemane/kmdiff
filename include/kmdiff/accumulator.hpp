@@ -42,7 +42,7 @@ class IAccumulator
 
   virtual void push(T&& e) = 0;
   virtual size_t size() const = 0;
-  virtual void finish(){};
+  virtual void finish() = 0;
   virtual std::optional<T>& get() = 0;
 
  protected:

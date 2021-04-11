@@ -140,9 +140,7 @@ public:
     kmer.set_k(m_kmer_size);
     if (m_kff_reader->has_next())
     {
-      std::cerr << "ok" << std::endl;
       m_kff_reader->next_kmer(m_buffer, m_data);
-      std::cerr << "ok" << std::endl;
       return Kmer<MAX_K>(to_string());
     }
     return std::nullopt;
