@@ -45,7 +45,7 @@ jobs:
         uses: codecov/codecov-action@v1.0.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{runner.workspace}}/build/tests/CMakeFiles/kmdiff-tests.dir/rapport_filter.info
+          file: ${{runner.workspace}}/build/tests/CMakeFiles/kmdiff-tests.dir/rapport_filter.info
 
       - name: Package
         shell: bash
