@@ -7,12 +7,12 @@ using namespace kmdiff;
 
 TEST(kff, read_write)
 {
-  size_t kmer_size = 20;
+  size_t kmer_size = 21;
   std::vector<std::string> vs;
   for (size_t i=0; i<100; i++)
     vs.push_back(random_dna_seq(kmer_size));
   {
-    KffWriter f("./tests_tmp/test.kff", 20);
+    KffWriter f("./tests_tmp/test.kff", kmer_size);
     for (auto& s: vs)
     {
       Kmer<32> k(s);

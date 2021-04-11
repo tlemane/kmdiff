@@ -18,6 +18,8 @@
 
 #include <gtest/gtest.h>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/kmer.hpp>
+#include <chrono>
 
 using namespace kmdiff;
 
@@ -70,4 +72,56 @@ TEST(utils, slice)
     EXPECT_EQ(to_end[i], v[5+i]);
   for (size_t i=0; i<too_large.size(); i++)
     EXPECT_EQ(too_large[i], v[i]);
+}
+
+TEST(utils, verbosity)
+{
+  EXPECT_EQ(str_to_verbosity_level("DEBUG"), VerbosityLevel::DEBUG);
+  EXPECT_EQ(str_to_verbosity_level("INFO"), VerbosityLevel::INFO);
+  EXPECT_EQ(str_to_verbosity_level("WARNING"), VerbosityLevel::WARNING);
+  EXPECT_EQ(str_to_verbosity_level("ERROR"), VerbosityLevel::ERROR);
+  EXPECT_EQ(str_to_verbosity_level("DEF"), VerbosityLevel::WARNING);
+
+  set_verbosity_level("DEBUG");
+  EXPECT_EQ(spdlog::get_level(), spdlog::level::debug);
+  set_verbosity_level("INFO");
+  EXPECT_EQ(spdlog::get_level(), spdlog::level::info);
+  set_verbosity_level("WARNING");
+  EXPECT_EQ(spdlog::get_level(), spdlog::level::warn);
+  set_verbosity_level("ERROR");
+  EXPECT_EQ(spdlog::get_level(), spdlog::level::err);
+}
+
+TEST(utils, rss)
+{
+  EXPECT_GE(get_peak_rss(), 0);
+  EXPECT_GE(get_current_rss(), 0);
+}
+
+TEST(utils, timer)
+{
+  using namespace std::chrono_literals;
+  Timer t;
+  std::this_thread::sleep_for(50ms);
+  EXPECT_GT(t.elapsed<std::chrono::milliseconds>().count(), 40);
+  
+  t.reset();
+  std::this_thread::sleep_for(50ms);
+  EXPECT_LT(t.elapsed<std::chrono::milliseconds>().count(), 60);
+}
+
+TEST(utils, ext)
+{
+  EXPECT_NO_THROW(exec_external_cmd("ls", ""));
+  EXPECT_THROW(exec_external_cmd("./ret1.sh", ""), ExternalExecFailed);
+  EXPECT_GT(get_uname_sr().size(), 0);
+}
+
+TEST(utils, sfinae)
+{
+  EXPECT_FALSE(has_dump<std::vector<int>>::value);
+  EXPECT_TRUE(has_dump<KmerSign<32>>::value);
+  EXPECT_TRUE(has_load<KmerSign<32>>::value);
+  EXPECT_FALSE(has_push_back<KmerSign<32>>::value);
+  EXPECT_FALSE(has_insert<KmerSign<32>>::value);
 }

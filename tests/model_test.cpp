@@ -22,6 +22,12 @@
 
 using namespace kmdiff;
 
+TEST(model, convert)
+{
+  EXPECT_EQ(correction_type_str(CorrectionType::NOTHING), "NOTHING");
+  EXPECT_EQ(correction_type_str(CorrectionType::BONFERRONI), "BONFERRONI");
+}
+
 TEST(model, model)
 {
   Model<8> model;
@@ -74,3 +80,15 @@ TEST(model, poisson_likelihood)
   }
 }
 
+TEST(model, icorrector)
+{
+  ICorrector c;
+  EXPECT_TRUE(c.apply(0.0));
+}
+
+TEST(model, bonferroni)
+{
+  Bonferroni b(0.05, 100);
+  EXPECT_TRUE(b.apply(0.0004));
+  EXPECT_FALSE(b.apply(0.0006));
+}

@@ -18,11 +18,13 @@
 
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <spdlog/spdlog.h>
 
 namespace fs = std::filesystem;
 
 int main(int argc, char* argv[])
 {
+  spdlog::set_level(spdlog::level::err);
   ::testing::InitGoogleTest(&argc, argv);
 
   fs::create_directory("./tests_tmp");

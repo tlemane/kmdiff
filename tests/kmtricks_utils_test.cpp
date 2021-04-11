@@ -1,16 +1,21 @@
 #include <gtest/gtest.h>
 #include <fmt/format.h>
 #include <kmdiff/kmtricks_utils.hpp>
+#include <kmdiff/exceptions.hpp>
 
 using namespace kmdiff;
 
 const std::string kmtricks_dir = "./data_test/kmtricks-dir";
+const std::string kmtricks_dir_bad = "./data_test/kmtricks-dir-bad";
 
 TEST(kmtricks_utils, config)
 {
   kmtricks_config_t config = get_kmtricks_config(kmtricks_dir);
   EXPECT_EQ(config.kmer_size, 20);
   EXPECT_EQ(config.nb_partitions, 4);
+
+  EXPECT_THROW(get_kmtricks_config("./dummy/"), KmtricksFileNotFound);
+  EXPECT_THROW(get_kmtricks_config(kmtricks_dir_bad), ConfigError);
 }
 
 TEST(kmtricks_utils, fofs)
@@ -46,4 +51,6 @@ TEST(kmtricks_utils, total)
 
   EXPECT_EQ(std::get<0>(t)[0], 160);
   EXPECT_EQ(std::get<1>(t)[0], 160);
+
+  EXPECT_THROW(get_total_kmer(kmtricks_dir_bad, 1, 1), KmtricksFileNotFound);
 }
