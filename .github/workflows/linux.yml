@@ -32,7 +32,10 @@ jobs:
         shell: bash
         working-directory: ${{runner.workspace}}/build
         run: cmake --build . --config $BUILD_TYPE -j2
-
+      
+      - name: Install lcov
+        run: sudo apt-get install lcov
+        
       - name: Test
         shell: bash
         working-directory: ${{runner.workspace}}/build
