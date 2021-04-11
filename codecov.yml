@@ -1,0 +1,6 @@
+ignore:
+  - "thirdparty"
+  - "tests"
+  - "src/simulator.cpp" # needs ext cmd
+  - "src/cli.cpp" # cli
+  - "src/cmd.cpp" # mains
