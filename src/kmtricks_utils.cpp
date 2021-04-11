@@ -69,28 +69,19 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
   std::vector<size_t> controls;
   std::vector<size_t> cases;
   std::string path = fmt::format("{}/storage/kmers.total", run_dir);
+  if (!fs::exists(path)) throw KmtricksFileNotFound(fmt::format("{} not found.", path));
   std::ifstream in(path, std::ios::in);
 
   std::string line;
   for (size_t i = 0; i < nb_controls; i++)
   {
-    if (!in.good())  // TODO remove
-      controls.push_back(100);
-    else
-    {
-      std::getline(in, line);
-      controls.push_back(bc::utils::lexical_cast<size_t>(bc::utils::split(line, ' ')[1]));
-    }
+    std::getline(in, line);
+    controls.push_back(bc::utils::lexical_cast<size_t>(bc::utils::split(line, ' ')[1]));
   }
   for (size_t i = 0; i < nb_cases; i++)
   {
-    if (!in.good())
-      cases.push_back(100);
-    else
-    {
-      std::getline(in, line);
-      cases.push_back(bc::utils::lexical_cast<size_t>(bc::utils::split(line, ' ')[1]));
-    }
+    std::getline(in, line);
+    cases.push_back(bc::utils::lexical_cast<size_t>(bc::utils::split(line, ' ')[1]));
   }
   return std::make_tuple(controls, cases);
 }

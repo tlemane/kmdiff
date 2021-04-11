@@ -350,7 +350,7 @@ void main_call(kmdiff_options_t options)
   std::string case_kmer = fmt::format("{}/case_kmers.fasta", opt->directory);
   if (!fs::exists(case_kmer)) 
     throw FileNotFound(fmt::format("{} not found.", case_kmer));
-  std::string case_output = fmt::format("{}/control_kmers.sam", output_directory);
+  std::string case_output = fmt::format("{}/case_kmers.sam", output_directory);
   std::string case_cmd = fmt::format(bbmap_align,
                                      case_kmer,
                                      case_output,
