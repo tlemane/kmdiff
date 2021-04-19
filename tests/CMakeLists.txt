@@ -1,7 +1,7 @@
 file(GLOB TEST_FILES "*_test.cpp")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests/)
 SET(CMAKE_CXX_FLAGS "-g -O0 --coverage ${CMAKE_CXX_FLAGS}")
-add_executable(${PROJECT_NAME}-tests "main_test.cpp;${PROJECT_SOURCE_DIR}/src/model.cpp;${PROJECT_SOURCE_DIR}/src/simulator.cpp;${PROJECT_SOURCE_DIR}/src/utils.cpp;${PROJECT_SOURCE_DIR}/src/sv.cpp;${PROJECT_SOURCE_DIR}/src/kmtricks_utils.cpp;${PROJECT_SOURCE_DIR}/src/threadpool.cpp" ${TEST_FILES})
+add_executable(${PROJECT_NAME}-tests "main_test.cpp;${PROJECT_SOURCE_DIR}/src/model.cpp;${PROJECT_SOURCE_DIR}/src/simulator.cpp;${PROJECT_SOURCE_DIR}/src/utils.cpp;${PROJECT_SOURCE_DIR}/src/sv.cpp;${PROJECT_SOURCE_DIR}/src/kmtricks_utils.cpp;${PROJECT_SOURCE_DIR}/src/threadpool.cpp;${PROJECT_SOURCE_DIR}/src/threadpool.cpp;${PROJECT_SOURCE_DIR}/src/reference.cpp" ${TEST_FILES})
 add_dependencies(${PROJECT_NAME}-tests ${DEPS})
 target_include_directories(${PROJECT_NAME}-tests PUBLIC ${INCLUDES})
 target_link_directories(${PROJECT_NAME}-tests PUBLIC ${GTEST_LIB})
