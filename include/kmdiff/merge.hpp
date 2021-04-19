@@ -73,6 +73,7 @@ class GlobalMerge
         m_accumulators(accumulators)
   {
     m_total_kmers.resize(m_fofs.size(), 0);
+    m_sign_per_part.resize(m_fofs.size(), 0);
   }
 
   size_t merge()
@@ -107,10 +108,11 @@ class GlobalMerge
 
               Kmer<MAX_KMER_SIZE> k;
               k.from_km(&merger.m_khash, m_kmer_size);
-              if (p_value < this->m_threshold)
+              if (p_value <= (this->m_threshold / static_cast<double>(100000)))
               {
                 KmerSign<MAX_KMER_SIZE> ks(std::move(k), p_value, sign, mean_ctr, mean_case);
                 this->m_accumulators[f]->push(std::move(ks));
+                this->m_sign_per_part[f]++;
               }
             }
           }
@@ -133,11 +135,17 @@ class GlobalMerge
     return std::accumulate(m_total_kmers.begin(), m_total_kmers.end(), 0ULL);
   }
 
+  size_t nb_sign()
+  {
+    return std::accumulate(m_sign_per_part.begin(), m_sign_per_part.end(), 0ULL);
+  }
+
  private:
   std::vector<std::string>& m_fofs;
   std::vector<uint32_t>& m_a_min;
-  std::string m_output_directory{};
-  std::vector<size_t> m_total_kmers{};
+  std::string m_output_directory;
+  std::vector<size_t> m_total_kmers;
+  std::vector<size_t> m_sign_per_part;
   size_t m_nb_controls{0};
   size_t m_nb_cases{0};
   int m_threads{0};
