@@ -47,6 +47,15 @@ const uint8_t NToB[256] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
+
+inline std::string str_rev_comp(const std::string& s)
+{
+  std::string rev;
+  for (auto it=s.rbegin(); it!=s.rend(); it++)
+    rev.push_back(revN[NToB[*it]]);
+  return rev;
+}
+
 template <size_t MAX_K>
 class Kmer
 {
@@ -248,6 +257,12 @@ class KmerSign
   double m_mean_case;
   Significance m_sign{Significance::NO};
 };
+
+template<size_t MAX_K>
+inline bool operator<(const KmerSign<MAX_K>& lhs, const KmerSign<MAX_K>& rhs)
+{
+  return lhs.m_pvalue > rhs.m_pvalue;
+}
 
 };  // namespace kmdiff
 

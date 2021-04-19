@@ -29,12 +29,12 @@ void main_count(kmdiff_options_t options)
 
   std::string kmtricks_args =
       "run --file {} --run-dir {} --kmer-size {} --count-abundance-min {} "
-      "--max-memory {} --nb-cores {} --minimizer-type {} --mode bin "
+      "--max-memory {} --nb-cores {} --minimizer-type {} --mode bin --max-count {} "
       "--minimizer-size {} --repartition-type {} --nb-partitions {} --lz4 --until count";
 
   std::string fmt_args = fmt::format(
       kmtricks_args, opt->file, opt->dir, opt->kmer_size, opt->abundance_min, opt->memory,
-      opt->nb_threads, opt->minimizer_type, opt->minimizer_size, opt->repartition_type,
+      opt->nb_threads, opt->minimizer_type, DEF_MAX_COUNT, opt->minimizer_size, opt->repartition_type,
       opt->nb_partitions);
 
 #ifdef KMDIFF_DEV_MODE
@@ -95,14 +95,19 @@ void main_diff(kmdiff_options_t options)
 
   size_t total_kmers = merger.merge();
 
+
   spdlog::info(
       "Partitions processed ({} seconds).", merge_timer.elapsed<std::chrono::seconds>().count());
 
+  spdlog::info("Found {} significant k-mers.", merger.nb_sign());
+  
   std::shared_ptr<ICorrector> corrector = nullptr;
 
-  spdlog::info("Aggregate and apply {} correction...", correction_type_str(opt->correction));
+  spdlog::info("Aggregate and apply correction...", correction_type_str(opt->correction));
   if (opt->correction == CorrectionType::BONFERRONI)
     corrector = std::make_shared<Bonferroni>(opt->threshold, total_kmers);
+  else if (opt->correction == CorrectionType::BENJAMINI)
+    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold, total_kmers);
 
   BlockingQueue<KmerSign<DEF_MAX_KMER>> case_queue(50000, config.nb_partitions);
   BlockingQueue<KmerSign<DEF_MAX_KMER>> control_queue(50000, config.nb_partitions);
@@ -111,13 +116,19 @@ void main_diff(kmdiff_options_t options)
 
   for (size_t p = 0; p < config.nb_partitions; p++)
   {
-    auto task = [&case_queue, &control_queue, &accumulators, p](int id) {
+    auto task = [&case_queue, &control_queue, &accumulators, corrector, p, &opt](int id) {
       while (std::optional<KmerSign<DEF_MAX_KMER>>& o = accumulators[p]->get())
       {
-        if ((*o).m_sign == Significance::CONTROL)
-          control_queue.push(std::move(*o));
-        else if ((*o).m_sign == Significance::CASE)
-          case_queue.push(std::move(*o));
+        bool keep = true;
+        if (corrector && (opt->correction == CorrectionType::BONFERRONI))
+          keep = corrector->apply((*o).m_pvalue);
+        if (keep)
+        {
+          if ((*o).m_sign == Significance::CONTROL)
+            control_queue.push(std::move(*o));
+          else if ((*o).m_sign == Significance::CASE)
+            case_queue.push(std::move(*o));
+        }
       }
       control_queue.end_signal(p);
       case_queue.end_signal(p);
@@ -144,22 +155,16 @@ void main_diff(kmdiff_options_t options)
     size_t i = 0;
     while (control_queue.pop(k))
     {
-      bool keep = true;
-      if (corrector) keep = corrector->apply(k.m_pvalue);
-
-      if (keep)
+      if (!opt->kff)
       {
-        if (!opt->kff)
-        {
-          record.name = fmt::format("{}_pval={}_control={}_case={}",
-                                  i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
-          record.seq = k.m_kmer.to_string();
-          *out << klibpp::format::fasta << record;
-        }
-        else
-        {
-          out_kff->write(k);
-        }
+        record.name = fmt::format("{}_pval={}_control={}_case={}",
+                                i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
+        record.seq = k.m_kmer.to_string();
+        *out << klibpp::format::fasta << record;
+      }
+      else
+      {
+        out_kff->write(k);
       }
       i++;
     }
@@ -182,22 +187,16 @@ void main_diff(kmdiff_options_t options)
     size_t i = 0;
     while (case_queue.pop(k))
     {
-      bool keep = true;
-      if (corrector) keep = corrector->apply(k.m_pvalue);
-
-      if (keep)
+      if (!opt->kff)
       {
-        if (!opt->kff)
-        {
-          record.name = fmt::format("{}_pval={}_control={}_case={}",
-                                  i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
-          record.seq = k.m_kmer.to_string();
-          *out << klibpp::format::fasta << record;
-        }
-        else
-        {
-          out_kff->write(k);
-        }
+        record.name = fmt::format("{}_pval={}_control={}_case={}",
+                                i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
+        record.seq = k.m_kmer.to_string();
+        *out << klibpp::format::fasta << record;
+      }
+      else
+      {
+        out_kff->write(k);
       }
       i++;
     }
@@ -205,9 +204,9 @@ void main_diff(kmdiff_options_t options)
     spdlog::info("Over-represented k-mers in cases dumped at {}", case_out);
   });
 
-  pool.join_all();
   case_consumer.join();
   control_consumer.join();
+  pool.join_all();
 
   spdlog::info("Done ({} seconds), Peak RSS -> {} MB.",
                whole.elapsed<std::chrono::seconds>().count(),
@@ -261,8 +260,10 @@ void main_popsim(kmdiff_options_t options)
   SVPool control_pool(control_pool_bed);
   SVPool case_pool(case_pool_bed);
 
+  Reference ref(opt->reference);
+
   Simulator simulator(
-      control_pool, opt->nb_controls, opt->mean_sv_per_indiv_controls,
+      ref, control_pool, opt->nb_controls, opt->mean_sv_per_indiv_controls,
       opt->sd_sv_per_indiv_controls, opt->prob_case, case_pool, opt->nb_cases,
       opt->mean_sv_per_indiv_cases, opt->sd_sv_per_indiv_cases, opt->prob_control);
 
@@ -277,7 +278,18 @@ void main_popsim(kmdiff_options_t options)
   std::string case_pool_bed_real = fmt::format("{}/real_case.bed", bed_dir);
   std::string shared_bed = fmt::format("{}/shared.bed", bed_dir);
 
-  simulator.dump(control_pool_bed_real, case_pool_bed_real, shared_bed);
+  std::string seq_control_pool_bed_real = fmt::format("{}/seq_real_control.fasta", bed_dir);
+  std::string seq_case_pool_bed_real = fmt::format("{}/seq_real_case.fasta", bed_dir);
+  std::string seq_shared_bed = fmt::format("{}/seq_shared.fasta", bed_dir);
+
+  simulator.dump(control_pool_bed_real,
+                 case_pool_bed_real,
+                 shared_bed,
+                 seq_control_pool_bed_real,
+                 seq_case_pool_bed_real,
+                 seq_shared_bed,
+                 opt->kmer_size);
+
   spdlog::info(
       "Individuals generated ({} seconds).", bed_timer.elapsed<std::chrono::seconds>().count());
 

@@ -52,6 +52,8 @@ struct diff_options : kmdiff_options
   CorrectionType correction;
   bool in_memory;
   bool kff;
+  std::string seq_control;
+  std::string seq_case;
 
   std::string display()
   {
@@ -65,6 +67,8 @@ struct diff_options : kmdiff_options
     RECORD(ss, correction_type_str(correction));
     RECORD(ss, in_memory);
     RECORD(ss, kff);
+    RECORD(ss, seq_control);
+    RECORD(ss, seq_case);
     return ss.str();
   }
 };

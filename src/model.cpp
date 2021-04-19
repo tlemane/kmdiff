@@ -30,6 +30,9 @@ std::string correction_type_str(const CorrectionType type)
     case CorrectionType::BONFERRONI:
       return "BONFERRONI";
       break;
+    case CorrectionType::BENJAMINI:
+      return "BENJAMINI";
+      break;
     default:
       return "";
       break;
@@ -41,8 +44,26 @@ bool ICorrector::apply(double p_value) { return true; }
 Bonferroni::Bonferroni(double threshold, size_t total)
     : m_threshold(threshold), m_total(static_cast<double>(total))
 {
+  this->m_type = CorrectionType::BONFERRONI;
 }
 
 bool Bonferroni::apply(double p_value) { return p_value < m_threshold / m_total; }
+
+BenjaminiHochberg::BenjaminiHochberg(double fdr, size_t total)
+  : m_fdr(fdr), m_total(static_cast<double>(total))
+{
+  this->m_type = CorrectionType::BENJAMINI;
+}
+
+bool BenjaminiHochberg::apply(double p_value)
+{
+  if (p_value < (m_rank/m_total)*m_fdr)
+  {
+    spdlog::debug("{}, {}", p_value, std::to_string((m_rank/m_total)*m_fdr));
+    m_rank++;
+    return true;
+  }
+  return false;
+}
 
 };  // namespace kmdiff

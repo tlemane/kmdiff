@@ -76,7 +76,7 @@ void add_common(bc::cmd_t cmd, kmdiff_options_t options)
   cmd->add_param("--version", "Show version and exit.")->as_flag()->action(bc::Action::ShowVersion);
   cmd->add_param("-v/--verbose", "Verbosity level [DEBUG|INFO|WARNING|ERROR].")
       ->meta("STR")
-      ->def("WARNING")
+      ->def("INFO")
       ->checker(bc::check::f::in("DEBUG|INFO|WARNING|ERROR"))
       ->setter(options->verbosity);
 
@@ -193,22 +193,39 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
   auto corr_setter = [options](const std::string& v) {
     if (v == "bonf")
       options->correction = CorrectionType::BONFERRONI;
+    else if (v == "bh")
+      options->correction = CorrectionType::BENJAMINI;
     else
       options->correction = CorrectionType::NOTHING;
   };
+
   diff_cmd->add_param("-c/--correction", "Significance correction.")
       ->meta("STR")
       ->def("bonf")
-      ->checker(bc::check::f::in("bonf|nothing"))
+      ->checker(bc::check::f::in("bonf|bh|nothing"))
       ->setter_c(corr_setter);
 
   diff_cmd->add_param("--kff-output", "Output significant k-mers in kff format.")
       ->as_flag()
       ->setter(options->kff);
 
+  auto memory_warn = [](){
+    spdlog::warn("--in-memory: all significants k-mers will live in memory.");
+  };
   diff_cmd->add_param("--in-memory", "Perform correction in memory.")
       ->as_flag()
-      ->setter(options->in_memory);
+      ->setter(options->in_memory)
+      ->callback(memory_warn);
+
+  diff_cmd->add_param("--seq-control", "Fasta with expected control sv sequences.")
+      ->meta("FILE")
+      ->def("")
+      ->setter(options->seq_control);
+
+  diff_cmd->add_param("--seq-case", "Fasta with expected case sv sequences.")
+      ->meta("FILE")
+      ->def("")
+      ->setter(options->seq_case);
 
   add_common(diff_cmd, options);
 
@@ -233,6 +250,11 @@ kmdiff_options_t popsim_cli(std::shared_ptr<bc::Parser<1>> cli, popsim_options_t
   popsim_cmd->add_param("-o/--output-dir", "Output directory.")
       ->meta("DIR")
       ->setter(options->output_directory);
+
+  popsim_cmd->add_param("--kmer-size", "Size of k-mers.")
+      ->meta("INT")
+      ->checker(bc::check::is_number)
+      ->setter(options->kmer_size);
 
   popsim_cmd->add_group("SVs", "");
 

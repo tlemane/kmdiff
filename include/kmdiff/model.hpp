@@ -42,7 +42,8 @@ namespace kmdiff
 enum class CorrectionType
 {
   NOTHING,
-  BONFERRONI
+  BONFERRONI,
+  BENJAMINI
 };
 
 std::string correction_type_str(const CorrectionType type);
@@ -79,6 +80,19 @@ class Model
     }
     double mean = sum / static_cast<double>(v.size());
     return std::make_tuple(mean, positive);
+  }
+
+  template <typename Iterable>
+  std::tuple<double, size_t> compute_sum_e(Iterable& v)
+  {
+    double sum = 0;
+    size_t positive = 0;
+    for (auto& e : v)
+    {
+      if (e > 0) positive++;
+      sum += e;
+    }
+    return std::make_tuple(sum, positive);
   }
 
   template <typename Iterable>
@@ -129,11 +143,12 @@ class PoissonLikelihood : public Model<MAX_C>
   }
 
  public:
+
   std::tuple<double, Significance, double, double>
   process(Range<count_t>& controls, Range<count_t>& cases) override
   {
-    auto [mean_control, positive_controls] = this->compute_mean_e(controls);
-    auto [mean_case, positive_cases] = this->compute_mean_e(cases);
+    auto [mean_control, positive_controls] = this->compute_sum_e(controls);
+    auto [mean_case, positive_cases] = this->compute_sum_e(cases);
 
     size_t positive_counts = positive_controls + positive_cases;
 
@@ -184,17 +199,31 @@ class ICorrector
  public:
   ICorrector() {}
   virtual bool apply(double p_value);
+ protected:
+  CorrectionType m_type {CorrectionType::NOTHING};
 };
 
 class Bonferroni : public ICorrector
 {
  public:
-  Bonferroni(double threshold, size_t m_total);
-  bool apply(double p_value);
+  Bonferroni(double threshold, size_t total);
+  bool apply(double p_value) override;
 
  private:
   double m_threshold;
   double m_total;
+};
+
+class BenjaminiHochberg : public ICorrector
+{
+public:
+  BenjaminiHochberg(double fdr, size_t total);
+  bool apply(double p_value) override;
+
+private:
+  double m_fdr;
+  double m_total;
+  size_t m_rank {1};
 };
 
 };  // end of namespace kmdiff
