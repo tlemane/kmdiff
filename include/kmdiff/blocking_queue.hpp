@@ -73,13 +73,23 @@ class BlockingQueue
   {
     {
       std::unique_lock<std::mutex> lock(m_queue_mutex);
+      for (size_t i=0; i<m_fp.size(); i++) m_fp[i] = true;
       m_finish = true;
     }
     m_empty_condition.notify_all();
     m_full_condition.notify_all();
   }
 
-  void end_signal(int i) { m_fp[i] = true; }
+  void end_signal(int i)
+  {
+    m_fp[i] = true;
+    {
+      if (std::all_of(m_fp.begin(), m_fp.end(), [](bool b) {return b;}))
+      {
+        end_signal();
+      }
+    }
+  }
 
  private:
   size_t m_max_size{0};
