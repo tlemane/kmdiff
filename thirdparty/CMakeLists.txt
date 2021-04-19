@@ -53,3 +53,11 @@ ExternalProject_Add(WGSIM
         PREFIX WGSIM
         SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/wgsim
         INSTALL_COMMAND "")
+
+ExternalProject_Add(HTSLIB
+        PREFIX HTSLIB
+        BUILD_IN_SOURCE 1
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/htslib
+        CONFIGURE_COMMAND ./configure
+        BUILD_COMMAND make
+        INSTALL_COMMAND "")
