@@ -135,6 +135,7 @@ std::vector<SV> SVPool::get(size_t size, std::mt19937 g)
 }
 
 Simulator::Simulator(
+    Reference& reference,
     SVPool& control_pool,
     size_t nb_control,
     size_t mean_control,
@@ -145,7 +146,8 @@ Simulator::Simulator(
     size_t mean_case,
     size_t sd_case,
     double prob_control)
-    : m_control_pool(control_pool),
+    : m_reference(reference),
+      m_control_pool(control_pool),
       m_nb_control(nb_control),
       m_mean_control(mean_control),
       m_sd_control(sd_control),
@@ -320,21 +322,66 @@ std::tuple<size_t, size_t> Simulator::sample(size_t size, double prob_bad)
   return std::make_tuple(good, bad);
 }
 
-void Simulator::dump(
-    const std::string& real_control, const std::string& real_case, const std::string& shared)
+void Simulator::dump(const std::string& real_control,
+                     const std::string& real_case,
+                     const std::string& shared,
+                     const std::string& seq_control,
+                     const std::string& seq_case,
+                     const std::string& seq_shared,
+                     size_t kmer_size)
 {
   std::ofstream control_out(real_control, std::ios::out);
   if (!control_out.good())
     throw std::runtime_error(fmt::format("Unable to write at {}.", real_control));
   std::ofstream case_out(real_case, std::ios::out);
-  if (!case_out.good()) throw std::runtime_error(fmt::format("Unable to write at {}.", real_case));
+  if (!case_out.good())
+    throw std::runtime_error(fmt::format("Unable to write at {}.", real_case));
   std::ofstream shared_out(shared, std::ios::out);
-  if (!shared_out.good()) throw std::runtime_error(fmt::format("Unable to write at {}.", shared));
+  if (!shared_out.good())
+    throw std::runtime_error(fmt::format("Unable to write at {}.", shared));
+  
+  //std::ofstream seq_control_out(seq_control, std::ios::out);
+  //if (!seq_control_out.good())
+  //  throw std::runtime_error(fmt::format("Unable to write at {}.", real_control));
+  //std::ofstream seq_case_out(seq_case, std::ios::out);
+  //if (!seq_case_out.good())
+  //  throw std::runtime_error(fmt::format("Unable to write at {}.", real_case));
+  //std::ofstream seq_shared_out(seq_shared, std::ios::out);
+  //if (!seq_shared_out.good())
+  //  throw std::runtime_error(fmt::format("Unable to write at {}.", shared));
 
-  for (auto& sv : m_real_control_pool) control_out << sv.to_bed_entry() << "\n";
-  for (auto& sv : m_real_case_pool) case_out << sv.to_bed_entry() << "\n";
+  klibpp::KSeq record;
+  klibpp::SeqStreamOut seq_control_out(seq_control.c_str());
+  klibpp::SeqStreamOut seq_case_out(seq_case.c_str());
+  klibpp::SeqStreamOut seq_shared_out(seq_shared.c_str());
 
-  for (auto& sv : m_shared_pool) shared_out << sv.to_bed_entry() << "\n";
+  size_t i = 0;
+  for (auto& sv : m_real_control_pool)
+  {
+    control_out << sv.to_bed_entry() << "\n";
+    auto [seq1, seq2] = m_reference.get_kmer_view(sv, kmer_size);
+    record.name = std::to_string(i); record.seq = str_to_upper(seq2);
+    seq_control_out << klibpp::format::fasta << record;
+    i++;
+  }
+  i = 0;
+  for (auto& sv : m_real_case_pool)
+  {
+    case_out << sv.to_bed_entry() << "\n";
+    auto [seq1, seq2] = m_reference.get_kmer_view(sv, kmer_size);
+    record.name = std::to_string(i); record.seq = str_to_upper(seq2);
+    seq_case_out << klibpp::format::fasta << record;
+    i++;
+  }
+  i = 0;
+  for (auto& sv : m_shared_pool)
+  {
+    shared_out << sv.to_bed_entry() << "\n";
+    auto [seq1, seq2] = m_reference.get_kmer_view(sv, kmer_size);
+    record.name = std::to_string(i); record.seq = str_to_upper(seq2);
+    seq_shared_out << klibpp::format::fasta << record;
+    i++;
+  }
 }
 
 };  // end of namespace kmdiff

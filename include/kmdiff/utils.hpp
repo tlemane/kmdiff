@@ -79,6 +79,8 @@ size_t get_current_rss();
 
 size_t get_peak_rss();
 
+std::string& str_to_upper(std::string& s);
+
 template <typename T>
 class Range
 {

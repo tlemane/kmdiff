@@ -44,6 +44,7 @@
 #include <kmdiff/sv.hpp>
 #include <kmdiff/threadpool.hpp>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/reference.hpp>
 
 namespace kmdiff
 {
@@ -51,11 +52,19 @@ const std::unordered_map<std::string, std::string> visor_map = {
     {"INS", "insertion"},
     {"DEL", "deletion"},
     {"INV", "inversion"},
-    {"TD", "tandem duplication"},
-    {"ITD", "inverted tandem duplication"},
+    {"DUP", "tandem duplication"},
+    {"IDUP", "inverted tandem duplication"},
     {"TCO", "translocation copy-paste"},
     {"TCU", "translocation cut-paste"},
-    {"RT", "reciprocal translocation"}};
+    {"RT", "reciprocal translocation"},
+    {"insertion", "INS"},
+    {"deletion", "DEL"},
+    {"inversion", "INV"},
+    {"tandem duplication", "DUP"},
+    {"inverted tandem duplication", "IDUP"},
+    {"translocation copy-paste", "TCO"},
+    {"translocation cut-paste", "TCU"},
+    {"reciprocal translocation", "RT"}};
 
 std::string convert_to_visor(const std::string& types);
 
@@ -113,6 +122,8 @@ class Simulator
   std::uniform_real_distribution<double> m_dist{0, 1};
   std::uniform_int_distribution<uint32_t> m_dist_int{0, 0xFFFFFFFF};
 
+  Reference& m_reference;
+
   SVPool& m_control_pool;
   size_t m_nb_control{0};
   size_t m_mean_control{0};
@@ -131,6 +142,7 @@ class Simulator
 
  public:
   Simulator(
+      Reference& reference,
       SVPool& control_pool,
       size_t nb_control,
       size_t mean_control,
@@ -164,8 +176,13 @@ class Simulator
 
   std::tuple<size_t, size_t> sample(size_t size, double prob_bad);
 
-  void dump(
-      const std::string& real_control, const std::string& real_case, const std::string& shared);
+  void dump(const std::string& real_control,
+            const std::string& real_case,
+            const std::string& shared,
+            const std::string& seq_control,
+            const std::string& seq_case,
+            const std::string& seq_shared,
+            size_t kmer_size);
 };
 
 };  // end of namespace kmdiff

@@ -33,6 +33,7 @@
 #include <kmdiff/model.hpp>
 #include <kmdiff/simulator.hpp>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/reference.hpp>
 
 namespace kmdiff
 {
@@ -69,10 +70,13 @@ struct popsim_options : kmdiff_options
   double indel_fraction;
   double extend;
 
+  size_t kmer_size;
+
   std::string display()
   {
     std::stringstream ss;
     ss << "\n";
+    ss << this->global_display();
     RECORD(ss, output_directory);
     RECORD(ss, reference);
     RECORD(ss, nb_controls);
@@ -97,7 +101,7 @@ struct popsim_options : kmdiff_options
     RECORD(ss, mutation_rate);
     RECORD(ss, indel_fraction);
     RECORD(ss, extend);
-    ss << this->global_display();
+    RECORD(ss, kmer_size);
     return ss.str();
   }
 };

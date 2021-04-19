@@ -193,6 +193,12 @@ size_t get_current_rss()
 #endif
 }
 
+std::string& str_to_upper(std::string& s)
+{
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  return s;
+}
+
 Timer::Timer() { start(); }
 
 void Timer::reset()

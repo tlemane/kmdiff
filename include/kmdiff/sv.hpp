@@ -30,7 +30,7 @@ class SV
 {
   friend struct std::hash<SV>;
 
- private:
+ public:
   std::string m_chr;
   std::string m_type;
   std::string m_seq;
