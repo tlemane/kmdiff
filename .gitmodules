@@ -31,3 +31,6 @@
 [submodule "thirdparty/wgsim"]
 	path = thirdparty/wgsim
 	url = https://github.com/tlemane/wgsim
+[submodule "thirdparty/htslib"]
+	path = thirdparty/htslib
+	url = https://github.com/samtools/htslib
