@@ -56,8 +56,8 @@ ExternalProject_Add(WGSIM
 
 ExternalProject_Add(HTSLIB
         PREFIX HTSLIB
+        URL https://github.com/samtools/htslib/releases/download/1.12/htslib-1.12.tar.bz2
         BUILD_IN_SOURCE 1
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/htslib
-        CONFIGURE_COMMAND ./configure
+        CONFIGURE_COMMAND ${PROJECT_BINARY_DIR}/thirdparty/HTSLIB2/src/HTSLIB2/configure --disable-libcurl --disable-bz2 --disable-lzma
         BUILD_COMMAND make
         INSTALL_COMMAND "")
