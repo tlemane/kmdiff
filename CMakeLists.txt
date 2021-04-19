@@ -92,7 +92,7 @@ set(DEPS XXHASH SPDLOG FMT KMTRICKS ALGLIB LZ4 KSEQPP WGSIM KFF HTSLIB)
 
 include_directories(${INCLUDES})
 link_directories(${FMT_LIB} ${XXHASH_LIB} ${KMTRICKS_LIB} ${ALGLIB_LIB} ${WGSIM_LIB} ${KFF_LIB} ${HTSLIB_LIB})
-link_libraries(fmt xxhash kmtricks lz4 dl pthread alglib wgsim kff hts.a z.a)
+link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff hts.a z.a)
 
 add_subdirectory(include)
 add_subdirectory(src)
