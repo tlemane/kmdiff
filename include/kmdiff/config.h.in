@@ -43,6 +43,7 @@
 #define SPDLOG_SHA1 "@SPDLOG_SHA1@"
 #define XXHASH_SHA1 "@XXHASH_SHA1@"
 #define WGSIM_SHA1 "@WGSIM_SHA1@"
+#define HTSLIB_SHA1 "@HTSLIB_SHA1@"
 #define CONTACT "@CONTACT@"
 #define AUTHOR "@AUTHOR@"
 

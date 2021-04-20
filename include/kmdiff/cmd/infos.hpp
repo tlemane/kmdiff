@@ -55,6 +55,7 @@ inline void main_infos()
   std::cerr << "spdlog: " << SPDLOG_SHA1 << "\n";
   std::cerr << "xxHash: " << XXHASH_SHA1 << "\n";
   std::cerr << "wgsim: " << WGSIM_SHA1 << "\n";
+  std::cerr << "htslib: " << HTSLIB_SHA1 << "\n";
   std::cerr << std::flush;
 }
 
