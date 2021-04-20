@@ -8,15 +8,19 @@ source:
 requirements:
   build:
     - {{ compiler('cxx') }}
-    - zlib
     - make
     - cmake
     - gxx_linux-64=9.3
 
+  host:
+    - zlib
+
   run:
+    - zlib
+    - gxx_linux-64=9.3
     - kmtricks>=0.0.6
-    - bbmap
     - python>=3.6
+    - bbmap>=38.90
 
 about:
   home: https://github.com/tlemane/kmdiff
