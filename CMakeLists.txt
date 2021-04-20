@@ -55,6 +55,7 @@ get_sha1(${THIRDPARTY_DIR}/spdlog SPDLOG_SHA1)
 get_sha1(${THIRDPARTY_DIR}/xxHash XXHASH_SHA1)
 get_sha1(${THIRDPARTY_DIR}/wgsim WGSIM_SHA1)
 
+set(HTSLIB_SHA1 "8cab518f97bbdf43165320c3a4bdef1e9a42893a")
 configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINARY_DIR}/include/kmdiff/config.hpp)
 
 set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
@@ -88,7 +89,10 @@ set(DEPS XXHASH SPDLOG FMT KMTRICKS ALGLIB LZ4 KSEQPP WGSIM KFF HTSLIB)
 
 include_directories(${INCLUDES})
 link_directories(${FMT_LIB} ${XXHASH_LIB} ${KMTRICKS_LIB} ${ALGLIB_LIB} ${WGSIM_LIB} ${KFF_LIB} ${HTSLIB_LIB})
-link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff ${HTSLIB_LIB}/libhts.a ZLIB::ZLIB)
+
+set(HTS_LINK "${HTSLIB_LIB}/libhts.a")
+
+link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff ${HTS_LINK} ZLIB::ZLIB)
 
 add_subdirectory(include)
 add_subdirectory(src)
