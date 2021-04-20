@@ -28,10 +28,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
-if (NOT APPLE)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
 find_package(ZLIB REQUIRED)
 
 set(DEF_MAX_KMER 32)
@@ -92,7 +88,7 @@ set(DEPS XXHASH SPDLOG FMT KMTRICKS ALGLIB LZ4 KSEQPP WGSIM KFF HTSLIB)
 
 include_directories(${INCLUDES})
 link_directories(${FMT_LIB} ${XXHASH_LIB} ${KMTRICKS_LIB} ${ALGLIB_LIB} ${WGSIM_LIB} ${KFF_LIB} ${HTSLIB_LIB})
-link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff hts.a z.a)
+link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff hts z)
 
 add_subdirectory(include)
 add_subdirectory(src)
