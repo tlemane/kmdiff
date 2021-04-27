@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(kmdiff VERSION 0.0.1 LANGUAGES C CXX)
+project(kmdiff VERSION 0.1 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -8,6 +8,7 @@ option(COMPILE_TESTS "Compile tests" OFF)
 option(BUILD_KMTRICKS_FULL "Build kmtricks binaries" OFF)
 option(MAKE_PACKAGE "Build package" OFF)
 option(CONDA_BUILD "Build inside conda env" OFF)
+option(WITH_POPSIM "Build kmdiff popsim" OFF)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -35,6 +36,10 @@ set(DEF_MAX_COUNT 256)
 
 if (DEV_MODE)
   add_compile_definitions(KMDIFF_DEV_MODE)
+endif()
+
+if (WITH_POPSIM)
+  add_compile_definitions(WITH_POPSIM)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
