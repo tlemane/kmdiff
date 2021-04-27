@@ -29,13 +29,15 @@ kmdiffCli::kmdiffCli(
   cli = std::make_shared<bc::Parser<1>>(bc::Parser<1>(name, desc, version, authors));
   diff_opt = std::make_shared<struct diff_options>(diff_options{});
   count_opt = std::make_shared<struct count_options>(count_options{});
-  popsim_opt = std::make_shared<struct popsim_options>(popsim_options{});
   call_opt = std::make_shared<struct call_options>(call_options{});
   info_cli(cli);
-  popsim_cli(cli, popsim_opt);
   count_cli(cli, count_opt);
   diff_cli(cli, diff_opt);
   call_cli(cli, call_opt);
+#ifdef WITH_POPSIM
+  popsim_opt = std::make_shared<struct popsim_options>(popsim_options{});
+  popsim_cli(cli, popsim_opt);
+#endif
 }
 
 std::tuple<COMMAND, kmdiff_options_t> kmdiffCli::parse(int argc, char* argv[])
@@ -171,7 +173,7 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
   diff_cmd->add_param("-o/--output-dir", "output directory.")
       ->meta("DIR")
       ->setter(options->output_directory)
-      ->def("./output");
+      ->def("./kmdiff_output");
 
   diff_cmd->add_param("--nb-controls", "Number of controls.")
       ->meta("INT")
@@ -199,11 +201,18 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       options->correction = CorrectionType::NOTHING;
   };
 
-  diff_cmd->add_param("-c/--correction", "Significance correction.")
+  bc::param_t cp = diff_cmd->add_param("-c/--correction", "Significance correction.")
       ->meta("STR")
       ->def("bonf")
       ->checker(bc::check::f::in("bonf|bh|nothing"))
       ->setter_c(corr_setter);
+
+  auto correction_warn = [cp](){
+    if (cp->value() == "bh")
+      spdlog::warn("-c/--correction bh: all significants k-mers will live in memory.");
+  };
+
+  cp->callback(correction_warn);
 
   diff_cmd->add_param("--kff-output", "Output significant k-mers in kff format.")
       ->as_flag()
