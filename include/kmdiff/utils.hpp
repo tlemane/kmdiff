@@ -81,6 +81,12 @@ size_t get_peak_rss();
 
 std::string& str_to_upper(std::string& s);
 
+template <template<typename> typename Container, typename T>
+void destroy_container(Container<T>& container)
+{
+  Container<T>().swap(container);
+}
+
 template <typename T>
 class Range
 {
