@@ -111,7 +111,7 @@ void main_diff(kmdiff_options_t options)
 
   if (opt->correction == CorrectionType::BONFERRONI)
   {
-    corrector = std::make_shared<Bonferroni>(opt->threshold, total_kmers);
+    corrector = std::make_shared<Bonferroni>(opt->threshold/100000, total_kmers);
     aggregator = std::make_unique<BonferonniAggregator<DEF_MAX_KMER>>(accumulators,
                                                                       corrector,
                                                                       opt,
@@ -119,7 +119,7 @@ void main_diff(kmdiff_options_t options)
   }
   else if (opt->correction == CorrectionType::BENJAMINI)
   {
-    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold, total_kmers);
+    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold/100000, total_kmers);
     aggregator = std::make_unique<BenjaminiAggregator<DEF_MAX_KMER>>(accumulators,
                                                                      corrector,
                                                                      opt,
@@ -145,21 +145,21 @@ void main_diff(kmdiff_options_t options)
     std::string out_sam_control = fmt::format("{}/control_align.sam", opt->output_directory);
     std::string out_sam_case = fmt::format("{}/case_align.sam", opt->output_directory);
 
-    Validator control_validator(opt->seq_control, control_out, out_sam_control);
-    Validator case_validator(opt->seq_case, case_out, out_sam_case);
+    Validator control_validator(opt->seq_control, control_out, out_sam_control, config.kmer_size);
+    Validator case_validator(opt->seq_case, case_out, out_sam_case, config.kmer_size);
 
     size_t nb_target_control, nb_covered_control;
     size_t nb_target_case, nb_covered_case;
 
     if (!opt->seq_control.empty())
     {
-      control_validator.align(config.kmer_size/3, opt->nb_threads);
+      control_validator.align(config.kmer_size/4, opt->nb_threads);
       control_validator.valid(nb_target_control, nb_covered_control);
     }
 
     if (!opt->seq_case.empty())
     {
-      case_validator.align(config.kmer_size/3, opt->nb_threads);
+      case_validator.align(config.kmer_size/4, opt->nb_threads);
       case_validator.valid(nb_target_case, nb_covered_case);
     }
 
