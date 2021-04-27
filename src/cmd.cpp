@@ -17,6 +17,9 @@
  *****************************************************************************/
 
 #include <kmdiff/cmd.hpp>
+#include <kmdiff/aggregator.hpp>
+#include <kmdiff/io/bam.hpp>
+#include <kmdiff/validator.hpp>
 
 namespace kmdiff
 {
@@ -83,7 +86,7 @@ void main_diff(kmdiff_options_t options)
   for (size_t i = 0; i < accumulators.size(); i++)
   {
     if (opt->in_memory)
-      accumulators[i] = std::make_shared<VectorAccumulator<KmerSign<DEF_MAX_KMER>>>(4096);
+      accumulators[i] = std::make_shared<VectorAccumulator<KmerSign<DEF_MAX_KMER>>>(65536);
     else
       accumulators[i] = std::make_shared<FileAccumulator<KmerSign<DEF_MAX_KMER>>>(
           fmt::format("{}/acc_{}", output_part_dir, i), config.kmer_size);
@@ -100,117 +103,82 @@ void main_diff(kmdiff_options_t options)
       "Partitions processed ({} seconds).", merge_timer.elapsed<std::chrono::seconds>().count());
 
   spdlog::info("Found {} significant k-mers.", merger.nb_sign());
-  
+
   std::shared_ptr<ICorrector> corrector = nullptr;
+  std::unique_ptr<IAggregator<DEF_MAX_KMER>> aggregator;
 
   spdlog::info("Aggregate and apply correction...", correction_type_str(opt->correction));
+
   if (opt->correction == CorrectionType::BONFERRONI)
-    corrector = std::make_shared<Bonferroni>(opt->threshold, total_kmers);
-  else if (opt->correction == CorrectionType::BENJAMINI)
-    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold, total_kmers);
-
-  BlockingQueue<KmerSign<DEF_MAX_KMER>> case_queue(50000, config.nb_partitions);
-  BlockingQueue<KmerSign<DEF_MAX_KMER>> control_queue(50000, config.nb_partitions);
-
-  ThreadPool pool(opt->nb_threads < 2 ? 1 : opt->nb_threads);
-
-  for (size_t p = 0; p < config.nb_partitions; p++)
   {
-    auto task = [&case_queue, &control_queue, &accumulators, corrector, p, &opt](int id) {
-      while (std::optional<KmerSign<DEF_MAX_KMER>>& o = accumulators[p]->get())
-      {
-        bool keep = true;
-        if (corrector && (opt->correction == CorrectionType::BONFERRONI))
-          keep = corrector->apply((*o).m_pvalue);
-        if (keep)
-        {
-          if ((*o).m_sign == Significance::CONTROL)
-            control_queue.push(std::move(*o));
-          else if ((*o).m_sign == Significance::CASE)
-            case_queue.push(std::move(*o));
-        }
-      }
-      control_queue.end_signal(p);
-      case_queue.end_signal(p);
-    };
-    pool.add_task(task);
+    corrector = std::make_shared<Bonferroni>(opt->threshold, total_kmers);
+    aggregator = std::make_unique<BonferonniAggregator<DEF_MAX_KMER>>(accumulators,
+                                                                      corrector,
+                                                                      opt,
+                                                                      config);
+  }
+  else if (opt->correction == CorrectionType::BENJAMINI)
+  {
+    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold, total_kmers);
+    aggregator = std::make_unique<BenjaminiAggregator<DEF_MAX_KMER>>(accumulators,
+                                                                     corrector,
+                                                                     opt,
+                                                                     config);
+  }
+  else
+  {
+    aggregator = make_uncorrected_aggregator<DEF_MAX_KMER>(accumulators,
+                                                           opt,
+                                                           config);
   }
 
-  using seq_out_t = std::unique_ptr<klibpp::SeqStreamOut>;
-
-  std::string ext = opt->kff ? ".kff" : ".fasta";
-  
-  std::string control_out = fmt::format("{}/control_kmers{}", opt->output_directory, ext);
-  auto control_consumer = std::thread([&control_queue, &control_out, corrector, &opt, &config]() {
-    KmerSign<DEF_MAX_KMER> k;
-    klibpp::KSeq record;
-    seq_out_t out = nullptr;
-    kff_w_t out_kff = nullptr;
-
-    if (opt->kff)
-      out_kff = std::make_unique<KffWriter>(control_out, config.kmer_size);
-    else
-      out = std::make_unique<klibpp::SeqStreamOut>(control_out.c_str());
-
-    size_t i = 0;
-    while (control_queue.pop(k))
-    {
-      if (!opt->kff)
-      {
-        record.name = fmt::format("{}_pval={}_control={}_case={}",
-                                i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
-        record.seq = k.m_kmer.to_string();
-        *out << klibpp::format::fasta << record;
-      }
-      else
-      {
-        out_kff->write(k);
-      }
-      i++;
-    }
-    if (out_kff) out_kff->close();
-    spdlog::info("Over-represented k-mers in controls dumped at {}", control_out);
-  });
-
-  std::string case_out = fmt::format("{}/case_kmers{}", opt->output_directory, ext);
-  auto case_consumer = std::thread([&case_queue, &case_out, corrector, &opt, &config]() {
-    KmerSign<DEF_MAX_KMER> k;
-    klibpp::KSeq record;
-    seq_out_t out = nullptr;
-    kff_w_t out_kff = nullptr;
-
-    if (opt->kff)
-      out_kff = std::make_unique<KffWriter>(case_out, config.kmer_size);
-    else
-      out = std::make_unique<klibpp::SeqStreamOut>(case_out.c_str());
-    
-    size_t i = 0;
-    while (case_queue.pop(k))
-    {
-      if (!opt->kff)
-      {
-        record.name = fmt::format("{}_pval={}_control={}_case={}",
-                                i, k.m_pvalue, k.m_mean_control, k.m_mean_case);
-        record.seq = k.m_kmer.to_string();
-        *out << klibpp::format::fasta << record;
-      }
-      else
-      {
-        out_kff->write(k);
-      }
-      i++;
-    }
-    if (out_kff) out_kff->close();
-    spdlog::info("Over-represented k-mers in cases dumped at {}", case_out);
-  });
-
-  case_consumer.join();
-  control_consumer.join();
-  pool.join_all();
+  aggregator->run();
 
   spdlog::info("Done ({} seconds), Peak RSS -> {} MB.",
                whole.elapsed<std::chrono::seconds>().count(),
                static_cast<size_t>(get_peak_rss() * 0.0009765625));
+
+  if ((!opt->seq_control.empty() || !opt->seq_case.empty()) && !opt->kff)
+  {
+    std::string control_out = fmt::format("{}/control_kmers{}", opt->output_directory, ".fasta");
+    std::string case_out = fmt::format("{}/case_kmers{}", opt->output_directory, ".fasta");
+    std::string out_sam_control = fmt::format("{}/control_align.sam", opt->output_directory);
+    std::string out_sam_case = fmt::format("{}/case_align.sam", opt->output_directory);
+
+    Validator control_validator(opt->seq_control, control_out, out_sam_control);
+    Validator case_validator(opt->seq_case, case_out, out_sam_case);
+
+    size_t nb_target_control, nb_covered_control;
+    size_t nb_target_case, nb_covered_case;
+
+    if (!opt->seq_control.empty())
+    {
+      control_validator.align(config.kmer_size/3, opt->nb_threads);
+      control_validator.valid(nb_target_control, nb_covered_control);
+    }
+
+    if (!opt->seq_case.empty())
+    {
+      case_validator.align(config.kmer_size/3, opt->nb_threads);
+      case_validator.valid(nb_target_case, nb_covered_case);
+    }
+
+    if (!opt->seq_control.empty())
+    {
+      double control_ratio =
+        static_cast<double>(nb_covered_control) / static_cast<double>(nb_target_control);
+      spdlog::info("{}% of control's SVs are covered by at least one k-mer.",
+                   control_ratio * 100.0);
+    }
+
+    if (!opt->seq_case.empty())
+    {
+      double case_ratio =
+        static_cast<double>(nb_covered_case) / static_cast<double>(nb_target_case);
+      spdlog::info("{}% of case's SVs are covered by at least one k-mer.",
+                   case_ratio * 100.0);
+    }
+  }
 }
 
 void main_popsim(kmdiff_options_t options)
@@ -325,7 +293,7 @@ void main_call(kmdiff_options_t options)
 
   Timer call_timer;
   spdlog::info("Map significant k-mers...");
-  
+
   std::string output_directory = fmt::format("{}/alignments", opt->directory);
   {
     std::ofstream out_opt(fmt::format("{}/{}-call.opt", opt->directory, PROJECT_NAME));
@@ -345,7 +313,7 @@ void main_call(kmdiff_options_t options)
   Timer control_time;
   spdlog::info("Map control k-mers...");
   std::string control_kmer = fmt::format("{}/control_kmers.fasta", opt->directory);
-  if (!fs::exists(control_kmer)) 
+  if (!fs::exists(control_kmer))
     throw FileNotFound(fmt::format("{} not found.", control_kmer));
   std::string control_output = fmt::format("{}/control_kmers.sam", output_directory);
   std::string control_cmd = fmt::format(bbmap_align,
@@ -360,7 +328,7 @@ void main_call(kmdiff_options_t options)
   Timer case_time;
   spdlog::info("Map case k-mers...");
   std::string case_kmer = fmt::format("{}/case_kmers.fasta", opt->directory);
-  if (!fs::exists(case_kmer)) 
+  if (!fs::exists(case_kmer))
     throw FileNotFound(fmt::format("{} not found.", case_kmer));
   std::string case_output = fmt::format("{}/case_kmers.sam", output_directory);
   std::string case_cmd = fmt::format(bbmap_align,
@@ -371,7 +339,7 @@ void main_call(kmdiff_options_t options)
   exec_external_cmd(bbmap_bin, case_cmd);
   spdlog::info("Case k-mers mapped ({} seconds).",
                 case_time.elapsed<std::chrono::seconds>().count());
-  
+
   spdlog::info("Mapping done ({} seconds).",
                 call_timer.elapsed<std::chrono::seconds>().count());
 

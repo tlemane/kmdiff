@@ -47,10 +47,6 @@ int main(int argc, char* argv[])
     {
       main_diff(options);
     }
-    else if (cmd == COMMAND::POPSIM)
-    {
-      main_popsim(options);
-    }
     else if (cmd == COMMAND::INFOS)
     {
       main_infos();
@@ -59,6 +55,12 @@ int main(int argc, char* argv[])
     {
       main_call(options);
     }
+#ifdef WITH_POPSIM
+    else if (cmd == COMMAND::POPSIM)
+    {
+      main_popsim(options);
+    }
+#endif
   }
   catch (const kmdiff_exception& e)
   {
