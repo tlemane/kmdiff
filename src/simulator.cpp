@@ -107,6 +107,11 @@ void get_reads(
   fclose(r2);
   fclose(snp);
 
+  std::ofstream fof(fmt::format("{}/fof.txt", fs::path(read1).parent_path().string()),
+                    std::ios::out);
+  fof << read1 << "\n";
+  fof << read2 << "\n";
+
   spdlog::debug("Generated -> {} ({} seconds)", read1, t.elapsed<std::chrono::seconds>().count());
 }
 
