@@ -59,7 +59,6 @@ bool BenjaminiHochberg::apply(double p_value)
 {
   if (p_value < (m_rank/m_total)*m_fdr)
   {
-    spdlog::debug("{}, {}", p_value, std::to_string((m_rank/m_total)*m_fdr));
     m_rank++;
     return true;
   }
