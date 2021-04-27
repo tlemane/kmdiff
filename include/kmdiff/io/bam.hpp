@@ -2,9 +2,10 @@
 
 // std
 #include <string>
+#include <vector>
 
 // ext
-#include <htslib/vcf.h>
+#include <htslib/sam.h>
 #include <fmt/format.h>
 
 // int
@@ -12,26 +13,27 @@
 
 namespace kmdiff {
 
-class VCFReader
+class BAMReader
 {
 public:
-  VCFReader(const std::string& path);
-  ~VCFReader();
+  BAMReader(const std::string& path);
+  ~BAMReader();
 
   void read_all();
-  bcf1_t* next();
+  bam1_t* next();
+  bam_hdr_t* get_header();
 
   auto begin() {return m_records.begin();}
   auto end() {return m_records.end();}
   auto begin() const {return m_records.begin();};
-  auto end() const {return m_records.end();};
+  auto end() const {return m_records.end();}
 
 private:
   std::string m_path;
-  htsFile* m_vcf_file;
-  bcf_hdr_t* m_header;
-  bcf1_t* m_record;
-  std::vector<bcf1_t*> m_records;
+  samFile* m_bam_file;
+  bam_hdr_t* m_bam_header;
+  bam1_t* m_record;
+  std::vector<bam1_t*> m_records;
 };
 
 }; // end of namespace kmdiff

@@ -19,8 +19,8 @@
 
 // int
 #include <kmdiff/io/bed.hpp>
-#include <kmdiff/io/kmer_sign_file.hpp>
 #include <kmdiff/io/vcf.hpp>
+#include <kmdiff/io/bam.hpp>
 
 namespace kmdiff
 {

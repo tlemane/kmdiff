@@ -26,6 +26,7 @@ TEST(model, convert)
 {
   EXPECT_EQ(correction_type_str(CorrectionType::NOTHING), "NOTHING");
   EXPECT_EQ(correction_type_str(CorrectionType::BONFERRONI), "BONFERRONI");
+  EXPECT_EQ(correction_type_str(CorrectionType::BENJAMINI), "BENJAMINI");
 }
 
 TEST(model, model)
@@ -37,7 +38,7 @@ TEST(model, model)
   EXPECT_FLOAT_EQ(model.compute_mean(v), 5.9);
   std::tuple<double, size_t> t = std::make_tuple(5.9, 6);
   auto [mean, n] = model.compute_mean_e(v);
-  
+
   EXPECT_FLOAT_EQ(mean, 5.9);
   EXPECT_EQ(n, 6);
 }
@@ -58,7 +59,7 @@ TEST(model, poisson_likelihood)
     v.push_back(100);
 
   PoissonLikelihood<100000> p(nb_control, nb_case, ct, ct);
-  
+
   Range<uint32_t> r1(v, 0, nb_control);
   Range<uint32_t> r2(v, nb_control, nb_case);
 
@@ -91,4 +92,11 @@ TEST(model, bonferroni)
   Bonferroni b(0.05, 100);
   EXPECT_TRUE(b.apply(0.0004));
   EXPECT_FALSE(b.apply(0.0006));
+}
+
+TEST(model, benjamini)
+{
+  BenjaminiHochberg b(0.25, 25);
+  EXPECT_TRUE(b.apply(0.001));
+  EXPECT_FALSE(b.apply(0.021));
 }
