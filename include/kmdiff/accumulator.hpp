@@ -44,6 +44,7 @@ class IAccumulator
   virtual size_t size() const = 0;
   virtual void finish() = 0;
   virtual std::optional<T>& get() = 0;
+  virtual void destroy() = 0;
 
  protected:
   std::optional<T> m_opt;
@@ -60,9 +61,15 @@ class VectorAccumulator : public IAccumulator<T>
  public:
   VectorAccumulator(size_t reserve = 65536) { m_data.reserve(reserve); }
 
-  void push(T&& e) override { m_data.push_back(std::move(e)); }
+  void push(T&& e) override
+  {
+    m_data.push_back(std::move(e));
+  }
 
-  void finish() override { m_it = m_data.begin(); }
+  void finish() override
+  {
+    m_it = m_data.begin();
+  }
 
   std::optional<T>& get() override
   {
@@ -78,7 +85,15 @@ class VectorAccumulator : public IAccumulator<T>
     return this->m_opt;
   }
 
-  size_t size() const override { return m_data.size(); }
+  size_t size() const override
+  {
+    return m_data.size();
+  }
+
+  void destroy() override
+  {
+    std::vector<T>().swap(m_data);
+  }
 
  public:
   std::vector<T> m_data;
@@ -91,11 +106,20 @@ class SetAccumulator : public IAccumulator<T>
   using iterator = typename robin_hood::unordered_set<T>::iterator;
 
  public:
-  SetAccumulator(size_t reserve = 65536) { m_data.reserve(reserve); }
+  SetAccumulator(size_t reserve = 65536)
+  {
+    m_data.reserve(reserve);
+  }
 
-  void push(T&& e) override { m_data.insert(std::move(e)); }
+  void push(T&& e) override
+  {
+    m_data.insert(std::move(e));
+  }
 
-  void finish() override { m_it = m_data.begin(); }
+  void finish() override
+  {
+    m_it = m_data.begin();
+  }
 
   std::optional<T>& get() override
   {
@@ -111,7 +135,15 @@ class SetAccumulator : public IAccumulator<T>
     return this->m_opt;
   }
 
-  size_t size() const override { return m_data.size(); }
+  size_t size() const override
+  {
+    return m_data.size();
+  }
+
+  void destroy() override
+  {
+    robin_hood::unordered_set<T>().swap(m_data);
+  }
 
  private:
   robin_hood::unordered_set<T> m_data;
@@ -121,8 +153,6 @@ class SetAccumulator : public IAccumulator<T>
 template <typename T>
 class FileAccumulator : public IAccumulator<T>
 {
-  // using out_stream_t = lz4_stream::basic_ostream<8192>;
-  // using in_stream_t = lz4_stream::basic_istream<8192>;
   using out_stream_t = std::ofstream;
   using in_stream_t = std::ifstream;
 
@@ -173,7 +203,17 @@ class FileAccumulator : public IAccumulator<T>
     return this->m_opt;
   }
 
-  size_t size() const override { return m_size; }
+  size_t size() const override
+  {
+    return m_size;
+  }
+
+  void destroy() override
+  {
+    m_out_stream->close();
+    m_in_stream->close();
+    fs::remove(m_path);
+  }
 
  private:
   T m_tmp;
