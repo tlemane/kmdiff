@@ -24,6 +24,10 @@
 // int
 #include <kmdiff/config.hpp>
 #include <kmdiff/utils.hpp>
+#include <limits>
+
+#define _KM_LIB_INCLUDE_
+#include <kmtricks/utilities.hpp>
 
 namespace kmdiff
 {
@@ -41,10 +45,9 @@ inline void main_infos()
   std::cerr << "static: " << STATIC_BUILD << "\n";
   std::cerr << "dev: " << DEV_BUILD << "\n";
   std::cerr << "max_k: " << DEF_MAX_KMER << "\n";
-  std::cerr << "max_c: " << DEF_MAX_COUNT << "\n";
+  std::cerr << "max_c: " << std::numeric_limits<selectC<DEF_MAX_COUNT>::type>::max() << "\n";
   std::cerr << "\n";
-  std::cerr << "- GIT SHA1 -"
-            << "\n";
+  std::cerr << "- GIT SHA1 / VERSION -" << "\n";
   std::cerr << "kmdiff: " << GIT_SHA1 << "\n";
   std::cerr << "kmtricks: " << KMTRICKS_SHA1 << "\n";
   std::cerr << "bcli: " << BCLI_SHA1 << "\n";
@@ -55,6 +58,7 @@ inline void main_infos()
   std::cerr << "spdlog: " << SPDLOG_SHA1 << "\n";
   std::cerr << "xxHash: " << XXHASH_SHA1 << "\n";
   std::cerr << "wgsim: " << WGSIM_SHA1 << "\n";
+  std::cerr << "zlib: " << ZLIB_SHA1 << "\n";
   std::cerr << "htslib: " << HTSLIB_SHA1 << "\n";
   std::cerr << std::flush;
 }

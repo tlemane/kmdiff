@@ -48,12 +48,24 @@ struct diff_options : kmdiff_options
   std::string output_directory;
   size_t nb_controls;
   size_t nb_cases;
+  size_t coverage;
   double threshold;
   CorrectionType correction;
   bool in_memory;
   bool kff;
   std::string seq_control;
   std::string seq_case;
+  bool pop_correction;
+  double kmer_pca;
+  size_t ploidy;
+  bool is_diploid;
+  size_t npc;
+
+#ifdef KMDIFF_DEV_MODE
+  double learning_rate;
+  size_t max_iteration;
+  double epsilon;
+#endif
 
   std::string display()
   {
@@ -63,12 +75,23 @@ struct diff_options : kmdiff_options
     RECORD(ss, output_directory);
     RECORD(ss, nb_controls);
     RECORD(ss, nb_cases);
+    RECORD(ss, coverage);
     RECORD(ss, threshold);
     RECORD(ss, correction_type_str(correction));
     RECORD(ss, in_memory);
     RECORD(ss, kff);
     RECORD(ss, seq_control);
     RECORD(ss, seq_case);
+    RECORD(ss, pop_correction);
+    RECORD(ss, kmer_pca);
+    RECORD(ss, ploidy);
+    RECORD(ss, is_diploid);
+    RECORD(ss, npc);
+#ifdef KMDIFF_DEV_MODE
+    double learning_rate;
+    size_t max_iteration;
+    double epsilon;
+#endif
     return ss.str();
   }
 };

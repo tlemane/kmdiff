@@ -50,11 +50,11 @@ public:
   std::tuple<COMMAND, kmdiff_options_t> parse(int argc, char* argv[]);
 
 private:
-  cli_t cli{nullptr};
-  diff_options_t diff_opt;
-  count_options_t count_opt;
-  popsim_options_t popsim_opt;
-  call_options_t call_opt;
+  cli_t cli {nullptr};
+  diff_options_t diff_opt {nullptr};
+  count_options_t count_opt {nullptr};
+  popsim_options_t popsim_opt {nullptr};
+  call_options_t call_opt {nullptr};
 };
 
 };  // namespace kmdiff

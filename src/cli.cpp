@@ -68,7 +68,7 @@ void add_common(bc::cmd_t cmd, kmdiff_options_t options)
 {
   cmd->add_group("common", "");
   cmd->add_param("-t/--threads", "Number of threads.")
-      ->def("1")
+      ->def(std::to_string(std::thread::hardware_concurrency()))
       ->meta("INT")
       ->setter(options->nb_threads)
       ->checker(bc::check::is_number);
@@ -83,7 +83,7 @@ void add_common(bc::cmd_t cmd, kmdiff_options_t options)
       ->setter(options->verbosity);
 
 #ifdef KMDIFF_DEV_MODE
-  cmd->add_group("dev options", "");
+  cmd->add_group("dev-common", "dev common parameters");
   cmd->add_param("-s/--signal", "Signal to raise.")
       ->checker(bc::check::is_number)
       ->setter(options->signal);
@@ -99,7 +99,7 @@ kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t o
       ->meta("FILE")
       ->setter(options->file);
 
-  count_cmd->add_param("-d/--run-dir", "runtime directory")->meta("DIR")->setter(options->dir);
+  count_cmd->add_param("-d/--run-dir", "Output directory.")->meta("DIR")->setter(options->dir);
 
   int max = requiredK<DEF_MAX_KMER>::value / 2;
   int min = max / 2;
@@ -107,7 +107,7 @@ kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t o
       ->checker(bc::check::is_number)
       ->checker(bc::check::f::range(min, max))
       ->setter(options->kmer_size)
-      ->def("31")
+      ->def(max == 32 ? "31" : "40")
       ->meta("INT");
 
   count_cmd->add_param("-c/--count-abundance-min", "min abundance for solid k-mers")
@@ -185,6 +185,12 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->checker(bc::check::is_number)
       ->setter(options->nb_cases);
 
+  diff_cmd->add_param("--coverage", "Coverage (running time concern, no impact on results).")
+      ->meta("INT")
+      ->def("20")
+      ->checker(bc::check::is_number)
+      ->setter(options->coverage);
+
   diff_cmd->add_param("--significance", "Significance threshold.")
       ->meta("FLOAT")
       ->checker(bc::check::is_number)
@@ -193,9 +199,9 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->def("0.05");
 
   auto corr_setter = [options](const std::string& v) {
-    if (v == "bonf")
+    if (v == "bonferroni")
       options->correction = CorrectionType::BONFERRONI;
-    else if (v == "bh")
+    else if (v == "benjamini")
       options->correction = CorrectionType::BENJAMINI;
     else
       options->correction = CorrectionType::NOTHING;
@@ -203,8 +209,8 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
 
   bc::param_t cp = diff_cmd->add_param("-c/--correction", "Significance correction.")
       ->meta("STR")
-      ->def("bonf")
-      ->checker(bc::check::f::in("bonf|bh|nothing"))
+      ->def("bonferroni")
+      ->checker(bc::check::f::in("bonferroni|benjamini|disable"))
       ->setter_c(corr_setter);
 
   auto correction_warn = [cp](){
@@ -226,6 +232,7 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->setter(options->in_memory)
       ->callback(memory_warn);
 
+#ifdef WITH_POPSIM
   diff_cmd->add_param("--seq-control", "Fasta with expected control sv sequences.")
       ->meta("FILE")
       ->def("")
@@ -235,6 +242,60 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->meta("FILE")
       ->def("")
       ->setter(options->seq_case);
+#endif
+
+#ifdef WITH_POPSTRAT
+  diff_cmd->add_group("population stratification", "");
+
+  diff_cmd->add_param("--pop-correction", "Apply correction of population stratification.")
+      ->as_flag()
+      ->setter(options->pop_correction);
+
+  diff_cmd->add_param("--kmer-pca", "Proportion of k-mers used for PCA.")
+      ->meta("FLOAT")
+      ->def("0.001")
+      ->checker(bc::check::f::range(0.0, 0.1))
+      ->setter(options->kmer_pca);
+
+  auto ploidy_setter = [options](const std::string& v) {
+    options->ploidy = bc::utils::lexical_cast<size_t>(v);
+    if (options->ploidy == 2) options->is_diploid = true;
+    else options->is_diploid = false;
+  };
+
+  diff_cmd->add_param("--ploidy", "Ploidy level.")
+      ->meta("INT")
+      ->def("2")
+      ->checker(bc::check::is_number)
+      ->setter_c(ploidy_setter);
+
+  diff_cmd->add_param("--n-pc", "Number of principal components.")
+      ->meta("INT")
+      ->def("2")
+      ->checker(bc::check::f::range(2, 10))
+      ->setter(options->npc);
+#endif
+
+#ifdef KMDIFF_DEV_MODE
+  diff_cmd->add_group("dev", "dev parameters");
+
+  diff_cmd->add_param("--learning-rate", "Learning rate.")
+      ->meta("FLOAT")
+      ->def("0.1")
+      ->checker(bc::check::f::range(0.0, 1.0))
+      ->setter(options->learning_rate);
+
+  diff_cmd->add_param("--max-iteration", "Max iteration.")
+      ->meta("INT")
+      ->def("25")
+      ->checker(bc::check::is_number)
+      ->setter(options->max_iteration);
+
+  diff_cmd->add_param("--epsilon", "Epsilon.")
+      ->meta("FLOAT")
+      ->def("1e-15")
+      ->setter(options->epsilon);
+#endif
 
   add_common(diff_cmd, options);
 
