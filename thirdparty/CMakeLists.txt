@@ -58,6 +58,21 @@ ExternalProject_Add(HTSLIB
         PREFIX HTSLIB
         URL https://github.com/samtools/htslib/releases/download/1.12/htslib-1.12.tar.bz2
         BUILD_IN_SOURCE 1
+        BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/libhts.a
         CONFIGURE_COMMAND ${PROJECT_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/configure --disable-libcurl --disable-bz2 --disable-lzma
-        BUILD_COMMAND make
+        BUILD_COMMAND make -j4
         INSTALL_COMMAND "")
+
+if (WITH_POPSTRAT)
+        ExternalProject_Add(HAWK
+                PREFIX HAWK
+                SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/hawk
+                INSTALL_COMMAND "")
+endif()
+
+ExternalProject_Add(ZLIB
+        PREFIX ZLIB
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/zlib
+        CMAKE_ARGS -DCMAKE_C_FLAGS=-O3 -DBUILD_SHARED_LIBS=OFF
+        INSTALL_COMMAND ""
+)

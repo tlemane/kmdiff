@@ -1,0 +1,11 @@
+genotypename: -a
+snpname: 
+indivname: -o
+evecoutname: .evec
+evaloutname: 
+altnormstyle: NO
+numoutevec: 10
+numoutlieriter: 5
+numoutlierevec: 10
+outliersigmathresh: 6
+qtmode: 0
