@@ -58,7 +58,7 @@ TEST(model, poisson_likelihood)
   for (size_t i=0; i<nb_case; i++)
     v.push_back(100);
 
-  PoissonLikelihood<100000> p(nb_control, nb_case, ct, ct);
+  PoissonLikelihood<100000> p(nb_control, nb_case, ct, ct, 10);
 
   Range<uint32_t> r1(v, 0, nb_control);
   Range<uint32_t> r2(v, nb_control, nb_case);

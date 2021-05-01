@@ -18,15 +18,15 @@ TEST(merge, merge)
   std::vector<acc_t<KmerSign<32>>> accumulators(config.nb_partitions);
   for (size_t i = 0; i < accumulators.size(); i++)
     accumulators[i] = std::make_shared<VectorAccumulator<KmerSign<32>>>(4096);
-  
+
   auto [total_controls, total_cases] = get_total_kmer(km, 1, 1);
 
   std::shared_ptr<Model<8>> model = std::make_shared<PoissonLikelihood<8>>(
-      1, 1, total_controls, total_cases);
-  
+      1, 1, total_controls, total_cases, 10);
+
   std::vector<uint32_t> dummy_a_min = std::vector<uint32_t>(1+1, 1);
-  
-  GlobalMerge<32, 8> merger(fofs, dummy_a_min, config.kmer_size, 1, 1, 10.0, outd, 2, model, accumulators);
+
+  GlobalMerge<32, 8> merger(fofs, dummy_a_min, config.kmer_size, 1, 1, 10.0, outd, 2, model, accumulators, "", "", false, 0.0);
 
   size_t s = merger.merge();
   EXPECT_EQ(s, 320);
