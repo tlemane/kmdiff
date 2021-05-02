@@ -11,7 +11,7 @@ function kmdiff_build ()
   cmake .. -DCMAKE_BUILD_TYPE=${1} \
            -DDEV_MODE=${2} -DWITH_POPSIM=${2} \
            -DBUILD_KMTRICKS_FULL=ON \
-           -DMAX_K=${3}
+           -DMAX_K=${3} \
            -DCOMPILE_TESTS=${4} \
            -DSTATIC=${5} \
            -DMAX_C=${8} \
