@@ -3,11 +3,11 @@ name: osx
 on:
   push:
     paths-ignore:
-      - '!README.md'
-      - '!docker/**'
-      - '!conda/**'
-      - '!scripts/**'
-      - '!.gitignore'
+      - 'README.md'
+      - 'docker/**'
+      - 'conda/**'
+      - 'scripts/**'
+      - '.gitignore'
 
 env:
   BUILD_TYPE: Release
