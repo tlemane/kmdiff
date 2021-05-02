@@ -20,16 +20,18 @@ Statistical methods used in kmdiff are from:
 
 ### Build dependencies
 
+* [zlib](https://zlib.net)
+* [bzip2](https://www.sourceware.org/bzip2/)
 
-A thirdparty tool used for population stratification correction needs:
+ population stratification correction needs:
   * [GSL](https://www.gnu.org/software/gsl/)
   * [OpenBLAS](https://www.openblas.net)
   * [Lapack](http://www.netlib.org/lapack/)
 
-<details><summary><strong>Ubuntu</strong></summary>
+<details><summary><strong>Ubuntu / Debian</strong></summary>
 
 <code>
-sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev
+sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev libbz2-dev zlib1g-dev zlib1g
 </code>
 
 </details>
@@ -37,7 +39,15 @@ sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev
 <details><summary><strong>Fedora</strong></summary>
 
 <code>
-sudo dnf install openblas openblas-devel lapack lapack-devel gsl gsl-devel
+sudo dnf install openblas openblas-devel lapack lapack-devel gsl gsl-devel bzip2-devel
+</code>
+
+</details>
+
+<details><summary><strong>Arch</strong></summary>
+
+<code>
+sudo pacman -S lapack lapacke openblas gsl bzip2 zlib
 </code>
 
 </details>
@@ -45,7 +55,7 @@ sudo dnf install openblas openblas-devel lapack lapack-devel gsl gsl-devel
 <details><summary><strong>macOS</strong></summary>
 
 <code>
-brew install gsl lapack openblas
+brew install gsl lapack openblas bzip2 zlib
 </code>
 
 </details>
@@ -77,6 +87,8 @@ conda install -c bioconda -c tlemane -c tlemane/label/dev kmdiff # temporary
 * cmake >= 3.13
 * gcc >= 8.1 or XCode >= 11.0 or clang >= 7
 * zlib
+* bzip2
+* GSL + Lapack + OpenBLAS (only with `-p 1`, [see build script](#Build-script)).
 
 #### Clone
 
