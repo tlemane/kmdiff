@@ -26,6 +26,30 @@ A thirdparty tool used for population stratification correction needs:
   * [OpenBLAS](https://www.openblas.net)
   * [Lapack](http://www.netlib.org/lapack/)
 
+<details><summary><strong>Ubuntu</strong></summary>
+
+<code>
+sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev
+</code>
+
+</details>
+
+<details><summary><strong>Fedora</strong></summary>
+
+<code>
+sudo dnf install openblas openblas-devel lapack lapack-devel gsl gsl-devel
+</code>
+
+</details>
+
+<details><summary><strong>macOS</strong></summary>
+
+<code>
+brew install gsl lapack openblas
+</code>
+
+</details>
+
 For conveniance, all kmdiff other build dependencies are included in [thirdparty directory](./thirdparty/).
 
 ### Runtime dependencies
