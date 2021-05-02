@@ -81,6 +81,18 @@ size_t get_peak_rss();
 
 std::string& str_to_upper(std::string& s);
 
+template<typename T>
+void check_fstream_good(const std::string& path, const T& stream)
+{
+  if (!stream.good())
+  {
+    if constexpr(std::is_same_v<T, std::ofstream>)
+      throw IOError(fmt::format("Unable to write at {}.", path));
+    else
+      throw IOError(fmt::format("Unable to read at {}.", path));
+  }
+}
+
 template <template<typename> typename Container, typename T>
 void destroy_container(Container<T>& container)
 {

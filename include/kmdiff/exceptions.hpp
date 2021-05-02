@@ -48,6 +48,7 @@ kmdiff_EXCEPTION(ExternalExecFailed);
 kmdiff_EXCEPTION(KmtricksFileNotFound);
 kmdiff_EXCEPTION(FileNotFound);
 kmdiff_EXCEPTION(ConfigError);
+kmdiff_EXCEPTION(IOError);
 
 
 kmdiff_EXCEPTION(VCFOpenError);
@@ -58,5 +59,7 @@ kmdiff_EXCEPTION(BEDBadFormat);
 
 kmdiff_EXCEPTION(BAMOpenError);
 kmdiff_EXCEPTION(BAMHeaderError);
+
+kmdiff_EXCEPTION(EigenStratError);
 
 };  // namespace kmdiff
