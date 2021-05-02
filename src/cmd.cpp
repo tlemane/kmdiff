@@ -20,6 +20,7 @@
 #include <kmdiff/aggregator.hpp>
 #include <kmdiff/io/bam.hpp>
 #include <kmdiff/validator.hpp>
+#include <kmdiff/popstrat.hpp>
 
 namespace kmdiff
 {
@@ -68,11 +69,17 @@ void main_diff(kmdiff_options_t options)
   spdlog::info("Process partitions...");
   Timer merge_timer;
 
+#ifdef KMDIFF_DEV_MODE
+  PopStratCorrector::s_learn_rate = opt->learning_rate;
+  PopStratCorrector::s_max_iteration = opt->max_iteration;
+  PopStratCorrector::s_epsilon = opt->epsilon;
+#endif
+
   auto [total_controls, total_cases] =
       get_total_kmer(opt->kmtricks_dir, opt->nb_controls, opt->nb_cases);
 
   std::shared_ptr<Model<DEF_MAX_COUNT>> model = std::make_shared<PoissonLikelihood<DEF_MAX_COUNT>>(
-      opt->nb_controls, opt->nb_cases, total_controls, total_cases);
+      opt->nb_controls, opt->nb_cases, total_controls, total_cases, 50000);
 
   std::string output_part_dir = fmt::format("{}/partitions", opt->output_directory);
   fs::create_directories(output_part_dir);
@@ -92,9 +99,23 @@ void main_diff(kmdiff_options_t options)
           fmt::format("{}/acc_{}", output_part_dir, i), config.kmer_size);
   }
 
+#ifdef WITH_POPSTRAT
+  std::string popstrat_dir = fmt::format("{}/popstrat", opt->output_directory);
+  std::string gwas_eigenstratX_geno = fmt::format("{}/gwas_eigenstratX.geno", popstrat_dir);
+  std::string gwas_eigenstratX_snp = fmt::format("{}/gwas_eigenstratX.snp", popstrat_dir);
+  std::string gwas_eigenstratX_ind = fmt::format("{}/gwas_eigenstratX.ind", popstrat_dir);
+  std::string gwas_eigenstratX_total = fmt::format("{}/gwas_eigenstratX.total", popstrat_dir);
+
   GlobalMerge<DEF_MAX_KMER, DEF_MAX_COUNT> merger(
       fofs, dummy_a_min, config.kmer_size, opt->nb_controls, opt->nb_cases, opt->threshold,
-      output_part_dir, opt->nb_threads, model, accumulators);
+      output_part_dir, opt->nb_threads, model, accumulators, gwas_eigenstratX_geno,
+      gwas_eigenstratX_snp, opt->pop_correction, opt->kmer_pca);
+#else
+  GlobalMerge<DEF_MAX_KMER, DEF_MAX_COUNT> merger(
+      fofs, dummy_a_min, config.kmer_size, opt->nb_controls, opt->nb_cases, opt->threshold,
+      output_part_dir, opt->nb_threads, model, accumulators, "",
+      "", opt->pop_correction, opt->kmer_pca);
+#endif
 
   size_t total_kmers = merger.merge();
 
@@ -134,9 +155,31 @@ void main_diff(kmdiff_options_t options)
 
   aggregator->run();
 
-  spdlog::info("Done ({} seconds), Peak RSS -> {} MB.",
-               whole.elapsed<std::chrono::seconds>().count(),
-               static_cast<size_t>(get_peak_rss() * 0.0009765625));
+#ifdef WITH_POPSTRAT
+  if (opt->pop_correction)
+  {
+    Timer pop_time;
+    spdlog::info("Population stratification correction...");
+
+    Timer pca_time;
+    spdlog::info("Run eigenstrat/smartpca...");
+    fs::create_directory(popstrat_dir);
+    std::string parfile_path = "parfile.txt";
+    std::string gwas_info_path = fmt::format("{}/gwas_infos.txt", popstrat_dir);
+    std::string kmtricks_fof = fmt::format("{}/storage/fof.txt", opt->kmtricks_dir);
+    write_parfile(parfile_path);
+    write_gwas_info(kmtricks_fof, gwas_info_path, opt->nb_controls, opt->nb_cases);
+    write_gwas_info(kmtricks_fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases);
+    write_gwas_eigenstrat_total(opt->kmtricks_dir, gwas_eigenstratX_total);
+
+    std::string log_eigenstrat = "eigenstrat.log";
+    run_eigenstrat_smartpca(popstrat_dir, parfile_path, log_eigenstrat, opt->is_diploid);
+    spdlog::info("smartpca done. ({} seconds).", pca_time.elapsed<std::chrono::seconds>().count());
+
+    spdlog::info("stratification correction done. ({} seconds).",
+                 pop_time.elapsed<std::chrono::seconds>().count());
+  }
+#endif
 
   if ((!opt->seq_control.empty() || !opt->seq_case.empty()) && !opt->kff)
   {
@@ -179,6 +222,10 @@ void main_diff(kmdiff_options_t options)
                    case_ratio * 100.0);
     }
   }
+
+  spdlog::info("Done ({} seconds), Peak RSS -> {} MB.",
+               whole.elapsed<std::chrono::seconds>().count(),
+               static_cast<size_t>(get_peak_rss() * 0.0009765625));
 }
 
 void main_popsim(kmdiff_options_t options)
@@ -347,59 +394,68 @@ void main_call(kmdiff_options_t options)
   std::string view_args = "{} -S -b -o {} {}";
   std::string sort_args = "{} {} -o {}";
   std::string index_args = "{} {} {}.bai";
+  std::string picard_bin = command_exists(get_binary_dir(), "picard");
+  std::string picard_cmd = "{} -I {} -O {} -LB lib1 -PL ILLUMINA -PU unit1 -SM 20 -SO queryname";
 
   spdlog::info("Convert control sam to bam...");
   std::string control_bam = fmt::format("{}/control_kmers.bam", output_directory);
   std::string control_bam_sorted = fmt::format("{}/control_kmers_sorted.bam", output_directory);
-  //exec_external_cmd(samtools_bin, fmt::format(view_args, "view", control_bam, control_output));
-  exec_external_cmd(samtools_bin, fmt::format(sort_args, "sort", control_output, control_bam_sorted));
-  //exec_external_cmd(samtools_bin, fmt::format(index_args,
-  //                                            "index",
-  //                                            control_bam_sorted,
+  std::string control_bam_rg = fmt::format("{}/control_kmers_sorted_rg.bam", output_directory);
+  //exec_external_cmd(samtools_bin, fmt::format(sort_args,
+  //                                            "sort -n",
+  //                                            control_output,
   //                                            control_bam_sorted));
+  exec_external_cmd(picard_bin, fmt::format(picard_cmd,
+                                            "AddOrReplaceReadGroups",
+                                            control_output,
+                                            control_bam_rg));
+
   spdlog::info("Done.");
-  
+
   spdlog::info("Convert case sam to bam...");
   std::string case_bam = fmt::format("{}/case_kmers.bam", output_directory);
   std::string case_bam_sorted = fmt::format("{}/case_kmers_sorted.bam", output_directory);
-  //exec_external_cmd(samtools_bin, fmt::format(view_args, "view", case_bam, case_output));
-  exec_external_cmd(samtools_bin, fmt::format(sort_args, "sort", case_output, case_bam_sorted));
-  //exec_external_cmd(samtools_bin, fmt::format(index_args,
-  //                                            "index",
-  //                                            case_bam_sorted,
+  std::string case_bam_rg = fmt::format("{}/case_kmers_sorted_rg.bam", output_directory);
+  //exec_external_cmd(samtools_bin, fmt::format(sort_args,
+  //                                            "sort -n",
+  //                                            case_output,
   //                                            case_bam_sorted));
+  exec_external_cmd(picard_bin, fmt::format(picard_cmd,
+                                            "AddOrReplaceReadGroups",
+                                            case_output,
+                                            case_bam_rg));
   spdlog::info("Done.");
 
-  //spdlog::info("Create gatk bwa image...");
-  //std::string gatk_bin = command_exists(get_binary_dir(), "gatk");
-  //std::string bwa_img_args = "{} --input {} --output {}";
-  //std::string out_img = fmt::format("{}/ref.img", opt->directory);
-  //exec_external_cmd(gatk_bin, fmt::format(bwa_img_args,
-  //                                        "BwaMemIndexImageCreator",
-  //                                        opt->reference, out_img));
+  spdlog::info("Create gatk bwa image...");
+  std::string gatk_bin = command_exists(get_binary_dir(), "gatk");
+  std::string bwa_img_args = "{} --input {} --output {}";
+  std::string out_img = fmt::format("{}/ref.img", opt->directory);
+  exec_external_cmd(gatk_bin, fmt::format(bwa_img_args,
+                                          "BwaMemIndexImageCreator",
+                                          opt->reference, out_img));
 
-  //spdlog::info("Prepare {}...", opt->reference);
-  //exec_external_cmd(samtools_bin, fmt::format("{} {}", "faidx", opt->reference));
-  //exec_external_cmd(gatk_bin, fmt::format("{} --REFERENCE {}",
-  //                                        "CreateSequenceDictionary",
-  //                                        opt->reference));
+  spdlog::info("Prepare {}...", opt->reference);
+  exec_external_cmd(samtools_bin, fmt::format("{} {}", "faidx", opt->reference));
+  exec_external_cmd(gatk_bin, fmt::format("{} --REFERENCE {}",
+                                          "CreateSequenceDictionary",
+                                          opt->reference));
 
-  //std::string gatk_sv_args = "{} --input {} --reference {} --outputVCFName {}";
-  
-  //spdlog::info("Run gatk sv pipeline on control...");
-  //std::string control_vcf = fmt::format("{}/control.vcf", opt->directory);
-  //exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
-  //                                        "StructuralVariantDiscoverer",
-  //                                        control_bam_sorted,
-  //                                        opt->reference,
-  //                                        control_vcf));
+  std::string gatk_sv_args = "{} --input {} --reference {} --outputVCFName {}";
 
-  //spdlog::info("Run gatk sv pipeline on case...");
-  //std::string case_vcf = fmt::format("{}/case.vcf", opt->directory);
-  //exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
-  //                                      "StructuralVariantDiscoverer",
-  //                                      case_bam_sorted,
-  //                                      opt->reference,
-  //                                      case_vcf));
+  spdlog::info("Run gatk sv pipeline on control...");
+  std::string control_vcf = fmt::format("{}/control.vcf", opt->directory);
+  exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
+                                          "StructuralVariantDiscoverer",
+                                          control_bam_rg,
+                                          opt->reference,
+                                          control_vcf));
+
+  spdlog::info("Run gatk sv pipeline on cases...");
+  std::string case_vcf = fmt::format("{}/case.vcf", opt->directory);
+  exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
+                                        "StructuralVariantDiscoverer",
+                                        case_bam_rg,
+                                        opt->reference,
+                                        case_vcf));
 }
 };  // namespace kmdiff
