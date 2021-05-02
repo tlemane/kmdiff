@@ -2,7 +2,9 @@
 
 function kmdiff_build ()
 {
-  echo "mode=${1} dev=${2} k=${3} c=${8} tests=${4} static=${5} j=${6} run=${7} pop=${9}"
+  echo "Options:"
+  echo "  -DCMAKE_BUILD_TYPE=${1} -DDEV_MODE=${2} -DWITH_POPSIM=${2} -DBUILD_KMTRICKS_FULL=ON"
+  echo -e "  -DMAX_K=${3} -DCOMPILE_TESTS=${4} -DSTATIC=${5} -DMAX_C=${8} -DWITH_POPSTRAT=${9}\n"
 
   mkdir build
   cd build
@@ -88,6 +90,7 @@ while getopts "r:k:t:c:j:p:dsh" option; do
       usage
       ;;
     p)
+      pop=${OPTARG}
       [[ ${pop} == 0 ]] || [[ ${pop} == 1 ]] || usage
       [[ ${pop} == 0 ]] && pop="OFF"
       ;;
@@ -98,6 +101,5 @@ while getopts "r:k:t:c:j:p:dsh" option; do
 done
 
 count=$((2**(${count}*8)-1))
-echo ${count}
-exit 1
+
 kmdiff_build ${mode} ${dev} ${ks} ${tests_str} ${static} ${jopt} ${tests_run} ${count} ${pop}
