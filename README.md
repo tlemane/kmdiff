@@ -23,7 +23,7 @@ Statistical methods used in kmdiff are from:
 * [zlib](https://zlib.net)
 * [bzip2](https://www.sourceware.org/bzip2/)
 
- population stratification correction needs:
+ Population stratification correction needs:
   * [GSL](https://www.gnu.org/software/gsl/)
   * [OpenBLAS](https://www.openblas.net)
   * [Lapack](http://www.netlib.org/lapack/)
