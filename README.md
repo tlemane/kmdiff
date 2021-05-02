@@ -8,7 +8,7 @@ This is a work in progress, it is not yet fully usable.
 
 ## Rationale
 
-kmdiff takes two read sets and outputs differentially represented k-mers between controls and cases.
+kmdiff provides differential k-mers analysis between two populations (control and case). Each population is represented by a set of short-read sequencing. Outputs are differentially represented k-mers between controls and cases.
 
 Statistical methods used in kmdiff are from:
 * Rahman, Atif, Ingileif Hallgrímsdóttir, Michael Eisen, and Lior Pachter. "Association mapping from sequencing reads using k-mers." Elife 7 (2018): e32920. https://doi.org/10.7554/eLife.32920.001
@@ -206,6 +206,8 @@ OPTIONS
 **Outputs**
 * control significant k-mers: `<output_dir>/control_kmers.[fasta|kff]`
 * case significant k-mers: `<output_dir>/case_kmers.fasta.[fasta|kff]`
+
+Abundances and p-values are provided in fasta headers.
 
 **Warning**: The next module `kmdiff call` doesn't support kff format.
 
