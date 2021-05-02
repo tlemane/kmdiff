@@ -159,7 +159,7 @@ if (WITH_POPSTRAT)
     add_custom_target(
       copy_hawk ALL
       DEPENDS HAWK
-      COMMAND cp ./thirdparty/hawk/EIG6.0.1-Hawk/src/smartpca ./bin
+      COMMAND cp ./build/thirdparty/HAWK/src/HAWK-build/smartpca ./bin
       COMMAND cp ./thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ./bin
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     add_dependencies(copy_hawk HAWK)

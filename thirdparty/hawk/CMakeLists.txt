@@ -44,3 +44,4 @@ add_executable(smartpca ${SRCE}/smartpca.c ${SRCE}/eigsubs.c ${SRCE}/exclude.c $
 target_include_directories(smartpca PRIVATE ${SRC}/../include ${BLAS_LIBRAIRIES})
 target_link_directories(smartpca PRIVATE ${BLAS_LIBRARIES} ${SRCN})
 target_link_libraries(smartpca nick openblas GSL::gsl openblas m pthread lapacke LAPACK::LAPACK)
+add_dependencies(smartpca EIGNICK)
