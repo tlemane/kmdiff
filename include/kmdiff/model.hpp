@@ -36,6 +36,7 @@
 // int
 #include <kmdiff/kmer.hpp>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/log_factorial_table.hpp>
 
 namespace kmdiff
 {
@@ -108,6 +109,12 @@ class Model
 template <size_t MAX_C>
 class PoissonLikelihood : public Model<MAX_C>
 {
+/*
+  Based on https://github.com/atifrahman/HAWK
+  https://doi.org/10.7554/eLife.32920.001
+  https://doi.org/10.1371/journal.pone.0245058
+*/
+
   using count_t = typename selectC<MAX_C>::type;
 
  public:
@@ -115,11 +122,13 @@ class PoissonLikelihood : public Model<MAX_C>
       size_t nb_controls,
       size_t nb_cases,
       const std::vector<size_t>& total_controls,
-      const std::vector<size_t>& total_cases)
+      const std::vector<size_t>& total_cases,
+      size_t preload)
       : m_nb_controls(nb_controls),
         m_nb_cases(nb_cases),
         m_total_kmer_controls(total_controls),
-        m_total_kmer_cases(total_cases)
+        m_total_kmer_cases(total_cases),
+        m_preload(preload)
   {
   }
 
@@ -139,7 +148,7 @@ class PoissonLikelihood : public Model<MAX_C>
   {
     if (lambda <= 0) return 0;
     if (k < 0) k = 0;
-    return (-lambda + (k * log(lambda) - log_factorial(k)));
+    return (-lambda + (k * log(lambda) - m_lf_table[k]));
   }
 
  public:
@@ -192,6 +201,9 @@ class PoissonLikelihood : public Model<MAX_C>
       std::accumulate(m_total_kmer_controls.begin(), m_total_kmer_controls.end(), 0ULL)};
 
   size_t m_sum_cases{std::accumulate(m_total_kmer_cases.begin(), m_total_kmer_cases.end(), 0ULL)};
+
+  size_t m_preload;
+  LogFactorialTable m_lf_table{m_preload};
 };
 
 class ICorrector

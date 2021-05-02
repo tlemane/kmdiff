@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <random>
 
 // ext
 #define _KM_LIB_INCLUDE_
@@ -34,10 +35,12 @@
 #include <kmdiff/model.hpp>
 #include <kmdiff/threadpool.hpp>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/blocking_queue.hpp>
+#include <kmdiff/popstrat.hpp>
 
 namespace kmdiff
 {
-template <int MAX_KMER_SIZE, int MAX_COUNT>
+template <size_t MAX_KMER_SIZE, size_t MAX_COUNT>
 class GlobalMerge
 {
   using ktype = typename selectK<MAX_KMER_SIZE>::type;
@@ -60,7 +63,11 @@ class GlobalMerge
       const std::string& output_directory,
       const int threads,
       const std::shared_ptr<Model<MAX_COUNT>>& model,
-      const std::vector<acc_t<KmerSign<MAX_KMER_SIZE>>>& accumulators)
+      const std::vector<acc_t<KmerSign<MAX_KMER_SIZE>>>& accumulators,
+      const std::string& path_geno,
+      const std::string& path_snp,
+      bool with_popstrat,
+      double for_pca)
       : m_fofs(fofs),
         m_a_min(a_min),
         m_kmer_size(kmer_size),
@@ -70,7 +77,11 @@ class GlobalMerge
         m_nb_cases(nb_cases),
         m_model(model),
         m_threshold(threshold),
-        m_accumulators(accumulators)
+        m_accumulators(accumulators),
+        m_path_geno(path_geno),
+        m_path_snp(path_snp),
+        m_with_popstrat(with_popstrat),
+        m_for_pca(for_pca)
   {
     m_total_kmers.resize(m_fofs.size(), 0);
     m_sign_per_part.resize(m_fofs.size(), 0);
@@ -83,9 +94,20 @@ class GlobalMerge
 
     std::exception_ptr ep = nullptr;
 
+    std::shared_ptr<EigGenoFile<MAX_COUNT>> geno_file = nullptr;
+    std::shared_ptr<EigSnpFile> snp_file = nullptr;
+
+#ifdef WITH_POPSTRAT
+    if (m_with_popstrat)
+    {
+      geno_file = std::make_shared<EigGenoFile<MAX_COUNT>>(m_path_geno);
+      snp_file = std::make_shared<EigSnpFile>(m_path_snp);
+    }
+#endif
+
     for (int f = 0; f < m_fofs.size(); f++)
     {
-      auto partition_merger = [&size, &ep, this, f](int id) {
+      auto partition_merger = [&size, &ep, this, f, geno_file, snp_file](int id) {
         Timer partition_timer;
         spdlog::debug("Process partition {}...", f);
 
@@ -102,6 +124,13 @@ class GlobalMerge
             merger.next();
             if (merger.keep)
             {
+#ifdef WITH_POPSTRAT
+              if (this->m_with_popstrat && (m_dist(m_generator) < m_for_pca))
+              {
+                geno_file->push(r_controls, r_cases);
+                snp_file->push();
+              }
+#endif
               this->m_total_kmers[f]++;
 
               auto [p_value, sign, mean_ctr, mean_case] = m_model->process(r_controls, r_cases);
@@ -153,6 +182,12 @@ class GlobalMerge
   double m_threshold{0};
   const std::shared_ptr<Model<MAX_COUNT>> m_model;
   const std::vector<acc_t<KmerSign<MAX_KMER_SIZE>>>& m_accumulators;
+  std::string m_path_geno;
+  std::string m_path_snp;
+  bool m_with_popstrat;
+  std::default_random_engine m_generator;
+  std::uniform_real_distribution<double> m_dist {0.0, 1.0};
+  double m_for_pca;
 };
 
 };  // end of namespace kmdiff
