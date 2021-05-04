@@ -119,6 +119,10 @@ class GlobalMerge
           Range<ctype> r_controls(merger.counts, 0, m_nb_controls);
           Range<ctype> r_cases(merger.counts, m_nb_controls, m_nb_cases);
 
+#ifdef WITH_POPSTRAT
+          std::vector<double> counts_ratio(m_nb_controls+m_nb_cases, 0);
+#endif
+
           while (!merger.end)
           {
             merger.next();
@@ -127,6 +131,7 @@ class GlobalMerge
 #ifdef WITH_POPSTRAT
               if (this->m_with_popstrat && (m_dist(m_generator) < m_for_pca))
               {
+                std::unique_lock<std::mutex> lock(this->m_mutex);
                 geno_file->push(r_controls, r_cases);
                 snp_file->push();
               }
@@ -139,7 +144,17 @@ class GlobalMerge
               k.from_km(&merger.m_khash, m_kmer_size);
               if (p_value <= (this->m_threshold / static_cast<double>(100000)))
               {
+#ifdef WITH_POPSTRAT
+                if (this->m_with_popstrat)
+                {
+                  for (size_t i=0; i<merger.counts.size(); i++)
+                    counts_ratio[i] = merger.counts[i];
+                }
+                KmerSign<MAX_KMER_SIZE> ks(std::move(k), p_value, sign,
+                                           counts_ratio, mean_ctr, mean_case);
+#else
                 KmerSign<MAX_KMER_SIZE> ks(std::move(k), p_value, sign, mean_ctr, mean_case);
+#endif
                 this->m_accumulators[f]->push(std::move(ks));
                 this->m_sign_per_part[f]++;
               }
@@ -188,6 +203,7 @@ class GlobalMerge
   std::default_random_engine m_generator;
   std::uniform_real_distribution<double> m_dist {0.0, 1.0};
   double m_for_pca;
+  std::mutex m_mutex;
 };
 
 };  // end of namespace kmdiff

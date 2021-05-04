@@ -20,6 +20,7 @@
 #include <kmdiff/cmd/diff.hpp>
 #include <kmdiff/threadpool.hpp>
 #include <kmdiff/blocking_queue.hpp>
+#include <kmdiff/popstrat.hpp>
 
 
 namespace kmdiff {
@@ -35,13 +36,22 @@ public:
     : m_accumulators(accumulators), m_corrector(corrector), m_opt(opt), m_config(config)
   {
   }
-
   virtual void run() = 0;
+
+#ifdef WITH_POPSTRAT
+  void add_pop_corrector(std::shared_ptr<PopStratCorrector> pop_corrector)
+  {
+    m_pop_corrector = pop_corrector;
+  }
+#endif
 
 protected:
   size_t m_nb_significant;
   std::vector<acc_t<KmerSign<MAX_K>>>& m_accumulators;
-  std::shared_ptr<ICorrector> m_corrector;
+  std::shared_ptr<ICorrector> m_corrector {nullptr};
+#ifdef WITH_POPSTRAT
+  std::shared_ptr<PopStratCorrector> m_pop_corrector {nullptr};
+#endif
   diff_options_t m_opt;
   kmtricks_config_t m_config;
 };
@@ -63,7 +73,7 @@ static void writer(BlockingQueue<KmerSign<MAX_K>>& queue,
   else
     out = std::make_unique<klibpp::SeqStreamOut>(out_path.c_str());
 
-  size_t count;
+  size_t count = 0;
   while (queue.pop(k))
   {
     if (!opt->kff)
@@ -103,10 +113,17 @@ public:
     ThreadPool pool(this->m_opt->nb_threads < 2 ? 1 : this->m_opt->nb_threads);
     for (size_t p = 0; p < this->m_config.nb_partitions; p++)
     {
+#ifdef WITH_POPSTRAT
+      auto task = std::bind(&BonferonniAggregator<MAX_K>::worker,
+                            std::ref(control_queue), std::ref(case_queue),
+                            std::ref(this->m_accumulators), this->m_corrector, this->m_pop_corrector, this->m_opt, this->m_config, p,
+                            std::placeholders::_1);
+#else
       auto task = std::bind(&BonferonniAggregator<MAX_K>::worker,
                             std::ref(control_queue), std::ref(case_queue),
                             std::ref(this->m_accumulators), this->m_corrector,
                             this->m_opt, this->m_config, p, std::placeholders::_1);
+#endif
       pool.add_task(task);
     }
 
@@ -125,6 +142,37 @@ public:
     pool.join_all();
   }
 
+#ifdef WITH_POPSTRAT
+  static void worker(BlockingQueue<KmerSign<MAX_K>>& control_queue,
+                     BlockingQueue<KmerSign<MAX_K>>& case_queue,
+                     std::vector<acc_t<KmerSign<MAX_K>>>& accumulators,
+                     std::shared_ptr<ICorrector> corrector,
+                     std::shared_ptr<PopStratCorrector> pop_corrector,
+                     diff_options_t opt, kmtricks_config_t config,
+                     size_t partition, int thread_id)
+  {
+    while (std::optional<KmerSign<MAX_K>>& o = accumulators[partition]->get())
+    {
+      bool keep = true;
+      if (pop_corrector)
+        pop_corrector->apply((*o));
+      if (corrector && (opt->correction == CorrectionType::BONFERRONI))
+        keep = pop_corrector ? corrector->apply((*o).m_corrected) : corrector->apply((*o).m_pvalue);
+      else
+        keep = pop_corrector ? (*o).m_corrected < 0.05 : (*o).m_pvalue < 0.05;
+
+      if (keep)
+      {
+        if ((*o).m_sign == Significance::CONTROL)
+          control_queue.push(std::move(*o));
+        else if ((*o).m_sign == Significance::CASE)
+          case_queue.push(std::move(*o));
+      }
+    }
+    control_queue.end_signal(partition);
+    case_queue.end_signal(partition);
+  }
+#else
   static void worker(BlockingQueue<KmerSign<MAX_K>>& control_queue,
                      BlockingQueue<KmerSign<MAX_K>>& case_queue,
                      std::vector<acc_t<KmerSign<MAX_K>>>& accumulators,
@@ -148,6 +196,7 @@ public:
     control_queue.end_signal(partition);
     case_queue.end_signal(partition);
   }
+#endif
 };
 
 template<size_t MAX_K>
@@ -171,11 +220,20 @@ public:
     ThreadPool pool(this->m_opt->nb_threads < 2 ? 1 : this->m_opt->nb_threads);
     for (size_t p = 0; p < this->m_config.nb_partitions; p++)
     {
+#ifdef WITH_POPSTRAT
+      auto task = std::bind(&BenjaminiAggregator<MAX_K>::worker,
+                            std::ref(m_pqueue),
+                            std::ref(this->m_accumulators),
+                            this->m_pop_corrector,
+                            p, std::ref(m_mutex),
+                            std::placeholders::_1);
+#else
       auto task = std::bind(&BenjaminiAggregator<MAX_K>::worker,
                             std::ref(m_pqueue),
                             std::ref(this->m_accumulators),
                             p, std::ref(m_mutex),
                             std::placeholders::_1);
+#endif
       pool.add_task(task);
     }
     pool.join_all();
@@ -190,7 +248,6 @@ public:
     auto case_writer = std::thread(&writer<MAX_K>,
                                    std::ref(case_queue), case_out, "case",
                                    this->m_opt, this->m_config);
-
     while (!m_pqueue.empty())
     {
       KmerSign<MAX_K> k = std::move(m_pqueue.top());
@@ -211,6 +268,24 @@ public:
   }
 
 private:
+#ifdef WITH_POPSTRAT
+  static void worker(std::priority_queue<KmerSign<MAX_K>>& pq,
+                     std::vector<acc_t<KmerSign<MAX_K>>>& accumulators,
+                     std::shared_ptr<PopStratCorrector> pop_corrector,
+                     size_t partition, std::mutex& mutex, int thread_id)
+  {
+    while (std::optional<KmerSign<MAX_K>>& o = accumulators[partition]->get())
+    {
+      if (pop_corrector)
+      {
+        pop_corrector->apply((*o));
+        (*o).m_pvalue = (*o).m_corrected;
+      }
+      std::unique_lock<std::mutex> lock(mutex);
+      pq.push((*o));
+    }
+  }
+#else
   static void worker(std::priority_queue<KmerSign<MAX_K>>& pq,
                      std::vector<acc_t<KmerSign<MAX_K>>>& accumulators,
                      size_t partition, std::mutex& mutex, int thread_id)
@@ -221,6 +296,7 @@ private:
       pq.push((*o));
     }
   }
+#endif
 
 private:
 std::mutex m_mutex;
@@ -229,12 +305,15 @@ std::mutex m_mutex;
 template<size_t MAX_K>
 auto make_uncorrected_aggregator(std::vector<acc_t<KmerSign<MAX_K>>>& accumulators,
                                  diff_options_t opt,
-                                 kmtricks_config_t config)
+                                 kmtricks_config_t config,
+                                 std::shared_ptr<PopStratCorrector> pop_corrector)
 {
-  return std::make_unique<BonferonniAggregator<MAX_K>>(accumulators,
-                                                       nullptr,
-                                                       opt,
-                                                       config);
+  auto aggregator = std::make_unique<BonferonniAggregator<MAX_K>>(accumulators,
+                                                                  nullptr,
+                                                                  opt,
+                                                                  config);
+  aggregator->add_pop_corrector(pop_corrector);
+  return aggregator;
 }
 
 

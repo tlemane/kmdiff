@@ -27,6 +27,20 @@ void print_matrix(const matrix_t& m)
   }
 }
 
+std::string str_matrix(const matrix_t& m)
+{
+  std::stringstream ss;
+  for (auto& i: m)
+  {
+    for (auto& j: i)
+    {
+      ss << j << " ";
+    }
+    ss << "\n";
+  }
+  return ss.str();
+}
+
 bool is_equal_v(const vector_t& v1, const vector_t& v2)
 {
   return std::equal(v1.begin(), v1.end(), v2.begin());
@@ -56,7 +70,8 @@ matrix_t transpose(const matrix_t& m)
 
 matrix_t multiply(const matrix_t& m1, const matrix_t& m2)
 {
-  matrix_t res (nrows(m1), vector_t(ncols(m1), 0.0));
+  matrix_t res (nrows(m1), vector_t(ncols(m2), 0.0));
+  assert(ncols(m1) == nrows(m2));
   for (size_t i=0; i<nrows(m1); i++)
     for (size_t j=0; j<ncols(m2); j++)
       for (size_t k=0; k<ncols(m1); k++)
@@ -200,39 +215,39 @@ std::tuple<vector_t, bool, bool, double, int> glm_newton_raphson(const matrix_t&
   double epsilon = 1e-6;
   double error = 0.0;
   int iter = 0;
-
-  vector_t weight_old(ncols(x));
+  matrix_t A = x;
+  vector_t weight_old(ncols(A), 0);
   for (size_t i=0; i<weight_old.size(); i++)
   {
     double mxx = -10000000000.0;
-    for (size_t j=0; j<nrows(x); j++)
+    for (size_t j=0; j<nrows(A); j++)
     {
-      mxx = std::max(mxx, x[j][i]);
+      mxx = std::max(mxx, A[j][i]);
     }
     weight_old[i] = 1.0/mxx;
   }
   double prev_error = 1e18;
   matrix_t AT = transpose(x);
-  matrix_t A_minus_Y(nrows(x), vector_t(1, 0));
-  vector_t B_proxy(nrows(x), 0);
+  matrix_t A_minus_Y(nrows(A), vector_t(1, 0));
+  vector_t B_proxy(nrows(A), 0);
   matrix_t ATB(nrows(AT), vector_t(B_proxy.size(), 0));
 
   while (true)
   {
     double error = 0.0;
-    for (size_t i=0; i<nrows(x); i++)
+    for (size_t i=0; i<nrows(A); i++)
     {
       double z_i = 0.0;
-      for (size_t j=0; j<ncols(x); j++)
+      for (size_t j=0; j<ncols(A); j++)
       {
-        z_i += x[i][j] * weight_old[j];
+        z_i += A[i][j] * weight_old[j];
       }
       double alph_i = sigmoid(z_i);
       error += (y[i]-alph_i)*(y[i]-alph_i);
       B_proxy[i] = alph_i*(1.0-alph_i);
       A_minus_Y[i][0] = alph_i-y[i];
     }
-    error /= nrows(x);
+    error /= nrows(A);
     re = error;
     if (std::fabs(error-prev_error) < epsilon)
       break;
@@ -246,7 +261,7 @@ std::tuple<vector_t, bool, bool, double, int> glm_newton_raphson(const matrix_t&
       }
     }
 
-    matrix_t toinv = multiply(ATB, x);
+    matrix_t toinv = multiply(ATB, A);
 
     auto [hinv, sing, nan] = inverse(toinv, nrows(toinv));
     if (sing || nan)
@@ -328,7 +343,8 @@ std::tuple<vector_t, bool, bool, double, int> glm_irls(const matrix_t& x,
 
     error /= nrows(x);
     ret_error = error;
-    if (std::fabs(error - prev_error))
+
+    if (std::fabs(error - prev_error) < epsilon)
       break;
 
     prev_error = error;
@@ -341,6 +357,7 @@ std::tuple<vector_t, bool, bool, double, int> glm_irls(const matrix_t& x,
         S_X[i][j] = S[i][0] * X[i][j];
       }
     }
+
     matrix_t hessian = multiply(X_T, S_X);
 
     auto [hessian_inv, sing, nan] = inverse(hessian, nrows(hessian));
@@ -357,7 +374,7 @@ std::tuple<vector_t, bool, bool, double, int> glm_irls(const matrix_t& x,
       S_z.push_back(vector_t(1, S[i][0] * z[i][0]));
     }
     matrix_t XTSz = multiply(X_T, S_z);
-    w = multiply(X_T, XTSz);
+    w = multiply(hessian_inv, XTSz);
 
     iter += 1;
     ein = iter;
@@ -373,15 +390,17 @@ std::tuple<vector_t, bool, bool, double, int> glm_irls(const matrix_t& x,
     for (size_t i=0; i<weight.size(); i++)
       weight[i] = w[i][0];
 
+    spdlog::debug("Work eta {} {} x {} {} mu {} {} w {} {}", nrows(eta), ncols(eta), nrows(x), ncols(x), nrows(mu), ncols(mu), nrows(w), ncols(w));
     for (size_t i=0; i<nrows(x); i++)
     {
       eta[i][0] = 0;
-      for (size_t j=0; j<ncols(x); i++)
+      for (size_t j=0; j<ncols(x); j++)
       {
         eta[i][0] += x[i][j] * w[j][0];
       }
       mu[i][0] = sigmoid(eta[i][0]);
     }
+    spdlog::debug("crash");
   }
   return std::make_tuple(weight, ise, ine, ret_error, ein);
 }

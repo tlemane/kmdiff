@@ -62,4 +62,6 @@ kmdiff_EXCEPTION(BAMHeaderError);
 
 kmdiff_EXCEPTION(EigenStratError);
 
+kmdiff_EXCEPTION(SingularError);
+
 };  // namespace kmdiff

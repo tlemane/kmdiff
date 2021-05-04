@@ -16,11 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#include <kmdiff/cmd.hpp>
 #include <kmdiff/aggregator.hpp>
+#include <kmdiff/cmd.hpp>
 #include <kmdiff/io/bam.hpp>
-#include <kmdiff/validator.hpp>
 #include <kmdiff/popstrat.hpp>
+#include <kmdiff/validator.hpp>
 
 namespace kmdiff
 {
@@ -38,8 +38,8 @@ void main_count(kmdiff_options_t options)
 
   std::string fmt_args = fmt::format(
       kmtricks_args, opt->file, opt->dir, opt->kmer_size, opt->abundance_min, opt->memory,
-      opt->nb_threads, opt->minimizer_type, DEF_MAX_COUNT, opt->minimizer_size, opt->repartition_type,
-      opt->nb_partitions);
+      opt->nb_threads, opt->minimizer_type, DEF_MAX_COUNT, opt->minimizer_size,
+      opt->repartition_type, opt->nb_partitions);
 
 #ifdef KMDIFF_DEV_MODE
   if (options->signal) std::raise(options->signal);
@@ -73,6 +73,7 @@ void main_diff(kmdiff_options_t options)
   PopStratCorrector::s_learn_rate = opt->learning_rate;
   PopStratCorrector::s_max_iteration = opt->max_iteration;
   PopStratCorrector::s_epsilon = opt->epsilon;
+  PopStratCorrector::s_stand = opt->stand;
 #endif
 
   auto [total_controls, total_cases] =
@@ -105,6 +106,7 @@ void main_diff(kmdiff_options_t options)
   std::string gwas_eigenstratX_snp = fmt::format("{}/gwas_eigenstratX.snp", popstrat_dir);
   std::string gwas_eigenstratX_ind = fmt::format("{}/gwas_eigenstratX.ind", popstrat_dir);
   std::string gwas_eigenstratX_total = fmt::format("{}/gwas_eigenstratX.total", popstrat_dir);
+  std::string pcs_evec = fmt::format("{}/pcs.evec", popstrat_dir);
 
   GlobalMerge<DEF_MAX_KMER, DEF_MAX_COUNT> merger(
       fofs, dummy_a_min, config.kmer_size, opt->nb_controls, opt->nb_cases, opt->threshold,
@@ -113,49 +115,18 @@ void main_diff(kmdiff_options_t options)
 #else
   GlobalMerge<DEF_MAX_KMER, DEF_MAX_COUNT> merger(
       fofs, dummy_a_min, config.kmer_size, opt->nb_controls, opt->nb_cases, opt->threshold,
-      output_part_dir, opt->nb_threads, model, accumulators, "",
-      "", opt->pop_correction, opt->kmer_pca);
+      output_part_dir, opt->nb_threads, model, accumulators, "", "", false, 0);
 #endif
 
   size_t total_kmers = merger.merge();
-
 
   spdlog::info(
       "Partitions processed ({} seconds).", merge_timer.elapsed<std::chrono::seconds>().count());
 
   spdlog::info("Found {} significant k-mers.", merger.nb_sign());
 
-  std::shared_ptr<ICorrector> corrector = nullptr;
-  std::unique_ptr<IAggregator<DEF_MAX_KMER>> aggregator;
-
-  spdlog::info("Aggregate and apply correction...", correction_type_str(opt->correction));
-
-  if (opt->correction == CorrectionType::BONFERRONI)
-  {
-    corrector = std::make_shared<Bonferroni>(opt->threshold/100000, total_kmers);
-    aggregator = std::make_unique<BonferonniAggregator<DEF_MAX_KMER>>(accumulators,
-                                                                      corrector,
-                                                                      opt,
-                                                                      config);
-  }
-  else if (opt->correction == CorrectionType::BENJAMINI)
-  {
-    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold/100000, total_kmers);
-    aggregator = std::make_unique<BenjaminiAggregator<DEF_MAX_KMER>>(accumulators,
-                                                                     corrector,
-                                                                     opt,
-                                                                     config);
-  }
-  else
-  {
-    aggregator = make_uncorrected_aggregator<DEF_MAX_KMER>(accumulators,
-                                                           opt,
-                                                           config);
-  }
-
-  aggregator->run();
-
 #ifdef WITH_POPSTRAT
+  std::shared_ptr<PopStratCorrector> pop_corrector = nullptr;
   if (opt->pop_correction)
   {
     Timer pop_time;
@@ -176,10 +147,65 @@ void main_diff(kmdiff_options_t options)
     run_eigenstrat_smartpca(popstrat_dir, parfile_path, log_eigenstrat, opt->is_diploid);
     spdlog::info("smartpca done. ({} seconds).", pca_time.elapsed<std::chrono::seconds>().count());
 
-    spdlog::info("stratification correction done. ({} seconds).",
-                 pop_time.elapsed<std::chrono::seconds>().count());
+    spdlog::info(
+        "stratification correction done. ({} seconds).",
+        pop_time.elapsed<std::chrono::seconds>().count());
+
+    pop_corrector = std::make_shared<PopStratCorrector>(
+        opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->npc);
+    pop_corrector->load_Z(pcs_evec);
+    pop_corrector->load_Y(gwas_eigenstratX_ind);
+    pop_corrector->load_C(opt->covariates);
+    pop_corrector->load_ginfo(gwas_info_path);
+    pop_corrector->init_global_features();
   }
 #endif
+
+  std::shared_ptr<ICorrector> corrector = nullptr;
+  std::unique_ptr<IAggregator<DEF_MAX_KMER>> aggregator;
+
+  spdlog::info("Aggregate and apply correction...", correction_type_str(opt->correction));
+
+  if (opt->correction == CorrectionType::BONFERRONI)
+  {
+    corrector = std::make_shared<Bonferroni>(opt->threshold / 100000, total_kmers);
+#ifdef WITH_POPSTRAT
+    aggregator =
+        std::make_unique<BonferonniAggregator<DEF_MAX_KMER>>(accumulators, corrector, opt, config);
+    aggregator->add_pop_corrector(pop_corrector);
+#else
+    aggregator =
+        std::make_unique<BonferonniAggregator<DEF_MAX_KMER>>(accumulators, corrector, opt, config);
+#endif
+  }
+  else if (opt->correction == CorrectionType::BENJAMINI)
+  {
+    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold / 100000, total_kmers);
+#ifdef WITH_POPSTRAT
+    aggregator =
+        std::make_unique<BenjaminiAggregator<DEF_MAX_KMER>>(accumulators, corrector, opt, config);
+    aggregator->add_pop_corrector(pop_corrector);
+#else
+    aggregator =
+        std::make_unique<BenjaminiAggregator<DEF_MAX_KMER>>(accumulators, corrector, opt, config);
+#endif
+  }
+  else
+  {
+#ifdef WITH_POPSTRAT
+    aggregator = make_uncorrected_aggregator<DEF_MAX_KMER>(accumulators,
+                                                           opt,
+                                                           config,
+                                                           pop_corrector);
+#else
+    aggregator = make_uncorrected_aggregator<DEF_MAX_KMER>(accumulators,
+                                                           opt,
+                                                           config,
+                                                           nullptr);
+#endif
+  }
+
+  aggregator->run();
 
   if ((!opt->seq_control.empty() || !opt->seq_case.empty()) && !opt->kff)
   {
@@ -196,36 +222,35 @@ void main_diff(kmdiff_options_t options)
 
     if (!opt->seq_control.empty())
     {
-      control_validator.align(config.kmer_size/4, opt->nb_threads);
+      control_validator.align(config.kmer_size / 4, opt->nb_threads);
       control_validator.valid(nb_target_control, nb_covered_control);
     }
 
     if (!opt->seq_case.empty())
     {
-      case_validator.align(config.kmer_size/4, opt->nb_threads);
+      case_validator.align(config.kmer_size / 4, opt->nb_threads);
       case_validator.valid(nb_target_case, nb_covered_case);
     }
 
     if (!opt->seq_control.empty())
     {
       double control_ratio =
-        static_cast<double>(nb_covered_control) / static_cast<double>(nb_target_control);
-      spdlog::info("{}% of control's SVs are covered by at least one k-mer.",
-                   control_ratio * 100.0);
+          static_cast<double>(nb_covered_control) / static_cast<double>(nb_target_control);
+      spdlog::info(
+          "{}% of control's SVs are covered by at least one k-mer.", control_ratio * 100.0);
     }
 
     if (!opt->seq_case.empty())
     {
       double case_ratio =
-        static_cast<double>(nb_covered_case) / static_cast<double>(nb_target_case);
-      spdlog::info("{}% of case's SVs are covered by at least one k-mer.",
-                   case_ratio * 100.0);
+          static_cast<double>(nb_covered_case) / static_cast<double>(nb_target_case);
+      spdlog::info("{}% of case's SVs are covered by at least one k-mer.", case_ratio * 100.0);
     }
   }
 
-  spdlog::info("Done ({} seconds), Peak RSS -> {} MB.",
-               whole.elapsed<std::chrono::seconds>().count(),
-               static_cast<size_t>(get_peak_rss() * 0.0009765625));
+  spdlog::info(
+      "Done ({} seconds), Peak RSS -> {} MB.", whole.elapsed<std::chrono::seconds>().count(),
+      static_cast<size_t>(get_peak_rss() * 0.0009765625));
 }
 
 void main_popsim(kmdiff_options_t options)
@@ -297,13 +322,9 @@ void main_popsim(kmdiff_options_t options)
   std::string seq_case_pool_bed_real = fmt::format("{}/seq_real_case.fasta", bed_dir);
   std::string seq_shared_bed = fmt::format("{}/seq_shared.fasta", bed_dir);
 
-  simulator.dump(control_pool_bed_real,
-                 case_pool_bed_real,
-                 shared_bed,
-                 seq_control_pool_bed_real,
-                 seq_case_pool_bed_real,
-                 seq_shared_bed,
-                 opt->kmer_size);
+  simulator.dump(
+      control_pool_bed_real, case_pool_bed_real, shared_bed, seq_control_pool_bed_real,
+      seq_case_pool_bed_real, seq_shared_bed, opt->kmer_size);
 
   spdlog::info(
       "Individuals generated ({} seconds).", bed_timer.elapsed<std::chrono::seconds>().count());
@@ -354,108 +375,31 @@ void main_call(kmdiff_options_t options)
   spdlog::info("Build reference index...");
   std::string index_cmd = fmt::format(bbmap_index, opt->reference, opt->nb_threads);
   exec_external_cmd(bbmap_bin, index_cmd);
-  spdlog::info("Done ({} seconds).",
-                index_time.elapsed<std::chrono::seconds>().count());
+  spdlog::info("Done ({} seconds).", index_time.elapsed<std::chrono::seconds>().count());
 
   Timer control_time;
   spdlog::info("Map control k-mers...");
   std::string control_kmer = fmt::format("{}/control_kmers.fasta", opt->directory);
-  if (!fs::exists(control_kmer))
-    throw FileNotFound(fmt::format("{} not found.", control_kmer));
+  if (!fs::exists(control_kmer)) throw FileNotFound(fmt::format("{} not found.", control_kmer));
   std::string control_output = fmt::format("{}/control_kmers.sam", output_directory);
-  std::string control_cmd = fmt::format(bbmap_align,
-                                        control_kmer,
-                                        control_output,
-                                        opt->seed_size,
-                                        opt->nb_threads);
+  std::string control_cmd =
+      fmt::format(bbmap_align, control_kmer, control_output, opt->seed_size, opt->nb_threads);
   exec_external_cmd(bbmap_bin, control_cmd);
-  spdlog::info("Control k-mers mapped ({} seconds).",
-                control_time.elapsed<std::chrono::seconds>().count());
+  spdlog::info(
+      "Control k-mers mapped ({} seconds).", control_time.elapsed<std::chrono::seconds>().count());
 
   Timer case_time;
   spdlog::info("Map case k-mers...");
   std::string case_kmer = fmt::format("{}/case_kmers.fasta", opt->directory);
-  if (!fs::exists(case_kmer))
-    throw FileNotFound(fmt::format("{} not found.", case_kmer));
+  if (!fs::exists(case_kmer)) throw FileNotFound(fmt::format("{} not found.", case_kmer));
   std::string case_output = fmt::format("{}/case_kmers.sam", output_directory);
-  std::string case_cmd = fmt::format(bbmap_align,
-                                     case_kmer,
-                                     case_output,
-                                     opt->seed_size,
-                                     opt->nb_threads);
+  std::string case_cmd =
+      fmt::format(bbmap_align, case_kmer, case_output, opt->seed_size, opt->nb_threads);
   exec_external_cmd(bbmap_bin, case_cmd);
-  spdlog::info("Case k-mers mapped ({} seconds).",
-                case_time.elapsed<std::chrono::seconds>().count());
+  spdlog::info(
+      "Case k-mers mapped ({} seconds).", case_time.elapsed<std::chrono::seconds>().count());
 
-  spdlog::info("Mapping done ({} seconds).",
-                call_timer.elapsed<std::chrono::seconds>().count());
-
-  std::string samtools_bin = command_exists(get_binary_dir(), "samtools");
-  std::string view_args = "{} -S -b -o {} {}";
-  std::string sort_args = "{} {} -o {}";
-  std::string index_args = "{} {} {}.bai";
-  std::string picard_bin = command_exists(get_binary_dir(), "picard");
-  std::string picard_cmd = "{} -I {} -O {} -LB lib1 -PL ILLUMINA -PU unit1 -SM 20 -SO queryname";
-
-  spdlog::info("Convert control sam to bam...");
-  std::string control_bam = fmt::format("{}/control_kmers.bam", output_directory);
-  std::string control_bam_sorted = fmt::format("{}/control_kmers_sorted.bam", output_directory);
-  std::string control_bam_rg = fmt::format("{}/control_kmers_sorted_rg.bam", output_directory);
-  //exec_external_cmd(samtools_bin, fmt::format(sort_args,
-  //                                            "sort -n",
-  //                                            control_output,
-  //                                            control_bam_sorted));
-  exec_external_cmd(picard_bin, fmt::format(picard_cmd,
-                                            "AddOrReplaceReadGroups",
-                                            control_output,
-                                            control_bam_rg));
-
-  spdlog::info("Done.");
-
-  spdlog::info("Convert case sam to bam...");
-  std::string case_bam = fmt::format("{}/case_kmers.bam", output_directory);
-  std::string case_bam_sorted = fmt::format("{}/case_kmers_sorted.bam", output_directory);
-  std::string case_bam_rg = fmt::format("{}/case_kmers_sorted_rg.bam", output_directory);
-  //exec_external_cmd(samtools_bin, fmt::format(sort_args,
-  //                                            "sort -n",
-  //                                            case_output,
-  //                                            case_bam_sorted));
-  exec_external_cmd(picard_bin, fmt::format(picard_cmd,
-                                            "AddOrReplaceReadGroups",
-                                            case_output,
-                                            case_bam_rg));
-  spdlog::info("Done.");
-
-  spdlog::info("Create gatk bwa image...");
-  std::string gatk_bin = command_exists(get_binary_dir(), "gatk");
-  std::string bwa_img_args = "{} --input {} --output {}";
-  std::string out_img = fmt::format("{}/ref.img", opt->directory);
-  exec_external_cmd(gatk_bin, fmt::format(bwa_img_args,
-                                          "BwaMemIndexImageCreator",
-                                          opt->reference, out_img));
-
-  spdlog::info("Prepare {}...", opt->reference);
-  exec_external_cmd(samtools_bin, fmt::format("{} {}", "faidx", opt->reference));
-  exec_external_cmd(gatk_bin, fmt::format("{} --REFERENCE {}",
-                                          "CreateSequenceDictionary",
-                                          opt->reference));
-
-  std::string gatk_sv_args = "{} --input {} --reference {} --outputVCFName {}";
-
-  spdlog::info("Run gatk sv pipeline on control...");
-  std::string control_vcf = fmt::format("{}/control.vcf", opt->directory);
-  exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
-                                          "StructuralVariantDiscoverer",
-                                          control_bam_rg,
-                                          opt->reference,
-                                          control_vcf));
-
-  spdlog::info("Run gatk sv pipeline on cases...");
-  std::string case_vcf = fmt::format("{}/case.vcf", opt->directory);
-  exec_external_cmd(gatk_bin, fmt::format(gatk_sv_args,
-                                        "StructuralVariantDiscoverer",
-                                        case_bam_rg,
-                                        opt->reference,
-                                        case_vcf));
+  spdlog::info("Mapping done ({} seconds).", call_timer.elapsed<std::chrono::seconds>().count());
 }
+
 };  // namespace kmdiff

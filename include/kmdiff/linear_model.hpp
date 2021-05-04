@@ -1,8 +1,13 @@
 #pragma once
 #include <vector>
 #include <tuple>
+#include <string>
+#include <sstream>
 
 #include <xmmintrin.h>
+
+// ext
+#include <spdlog/spdlog.h>
 
 namespace kmdiff {
 
@@ -12,6 +17,17 @@ using vector_t = std::vector<double>;
 size_t nrows(const matrix_t& m);
 size_t ncols(const matrix_t& m);
 void print_matrix(const matrix_t& m);
+std::string str_matrix(const matrix_t& m);
+
+template<typename T>
+std::string str_vector(const T& v)
+{
+  std::stringstream ss;
+  for (auto& e : v)
+    ss << e << " ";
+  return ss.str();
+}
+
 bool is_equal_v(const vector_t& v1, const vector_t& v2);
 bool is_equal_m(const matrix_t& m1, const matrix_t& m2);
 bool is_equal_d(double x, double y, double e = 1e-15);

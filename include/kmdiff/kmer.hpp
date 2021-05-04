@@ -221,12 +221,21 @@ class KmerSign
 {
   friend struct std::hash<KmerSign<MAX_K>>;
  public:
+#ifdef WITH_POPSTRAT
+  KmerSign(Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
+           std::vector<double>& counts_ratio, double mean_control = 0, double mean_case = 0)
+      : m_kmer(std::move(kmer)), m_pvalue(pvalue), m_sign(sign), m_counts_ratio(counts_ratio),
+        m_mean_control(mean_control), m_mean_case(mean_case)
+  {
+  }
+#else
   KmerSign(Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
            double mean_control = 0, double mean_case = 0)
       : m_kmer(std::move(kmer)), m_pvalue(pvalue), m_sign(sign),
         m_mean_control(mean_control), m_mean_case(mean_case)
   {
   }
+#endif
 
   KmerSign() {}
 
@@ -237,6 +246,13 @@ class KmerSign
     stream->read(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
     stream->read(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
     stream->read(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
+#ifdef WITH_POPSTRAT
+    size_t size_ = 0;
+    stream->read(reinterpret_cast<char*>(&size_), sizeof(size_));
+    m_counts_ratio.resize(size_, 0);
+    stream->read(reinterpret_cast<char*>(m_counts_ratio.data()),
+                 size_*sizeof(double));
+#endif
   }
 
   void dump(std::shared_ptr<std::ostream> stream)
@@ -246,6 +262,12 @@ class KmerSign
     stream->write(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
     stream->write(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
     stream->write(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
+#ifdef WITH_POPSTRAT
+    size_t size = m_counts_ratio.size();
+    stream->write(reinterpret_cast<char*>(&size), sizeof(size));
+    stream->write(reinterpret_cast<char*>(m_counts_ratio.data()),
+                 size*sizeof(double));
+#endif
   }
 
   bool operator==(const KmerSign<MAX_K>& rhs) const { return m_kmer == rhs.m_kmer; }
@@ -256,6 +278,10 @@ class KmerSign
   double m_mean_control;
   double m_mean_case;
   Significance m_sign{Significance::NO};
+#ifdef WITH_POPSTRAT
+  std::vector<double> m_counts_ratio;
+  double m_corrected {0};
+#endif
 };
 
 template<size_t MAX_K>

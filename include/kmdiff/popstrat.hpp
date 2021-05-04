@@ -55,7 +55,6 @@ public:
   }
   void push(const Range<ctype>& controls, const Range<ctype>& cases)
   {
-    std::unique_lock<std::mutex> lock(m_mutex);
     for (auto& c : controls)
       m_out << (c > 0 ? "1\t" : "0\t");
     for (auto& c : cases)
@@ -66,7 +65,6 @@ public:
 private:
   std::string m_path;
   std::ofstream m_out;
-  std::mutex m_mutex;
 };
 
 class EigSnpFile
@@ -79,7 +77,6 @@ public:
   }
   void push()
   {
-    std::unique_lock<std::mutex> lock(m_mutex);
     m_out << std::to_string(m_i) << "\t1\t0.0\t0\n";
     m_i++;
   }
@@ -87,17 +84,20 @@ public:
 private:
   std::string m_path;
   std::ofstream m_out;
-  std::mutex m_mutex;
   size_t m_i;
 };
 
 class PopStratCorrector : public ICorrector
 {
 private:
-  inline static size_t s_max_iter = 25;
+  inline static size_t s_max_iter = 100;
   inline static size_t s_pca_count = 10;
   inline static double s_learn_rate = 0.1;
   inline static double s_epsilon = 1e-30;
+  inline static bool s_stand = true;
+  inline static const std::string s_m = "M";
+  inline static const std::string s_f = "F";
+  inline static const std::string s_u = "U";
 
 public:
 #ifndef KMDIFF_DEV_MODE
@@ -116,10 +116,113 @@ public:
 #endif
   void load_Z(const std::string& path);
   void load_Y(const std::string& path);
+  void load_C(const std::string& path);
   void load_ginfo(const std::string& path);
   void init_global_features();
 
-  double apply(vector_t& counts_ratio);
+  template<size_t MAX_K>
+  double apply(KmerSign<MAX_K>& ks)
+  {
+    matrix_t local_features(m_alt_global_features);
+
+    for (size_t i=0; i<m_size; i++)
+      local_features[i][m_alt_feature_count - 1] = ks.m_counts_ratio[i]/m_totals[i];
+
+  #ifdef KMDIFF_DEV_MODE
+    vector_t model;
+    bool singular, nan;
+    double error
+    int iter;
+
+    if (m_use_irls)
+    {
+      std::tie(model, singular, nan, error, iter) = glm_irls(local_features,
+                                                          m_Y,
+                                                          s_learn_rate,
+                                                          s_max_iter);
+      if (singular || nan) crash_on_error("alt model", singular, nan, error, iter);
+    }
+    else
+    {
+      std::tie(model, singular, nan, error, iter) = glm_newton_raphson(local_features,
+                                                                    m_Y,
+                                                                    s_learn_rate,
+                                                                    s_max_iter);
+      if (singular || nan) crash_on_error("alt model", singular, nan, error, iter);
+    }
+  #else
+    auto [model, singular, nan, error, iter] = glm_newton_raphson(local_features,
+                                                                  m_Y,
+                                                                  s_learn_rate,
+                                                                  s_max_iter);
+    if (singular || nan) crash_on_error("alt model", singular, nan, error, iter);
+
+  #endif
+    double alt_likelihood = 1.0;
+
+    for (size_t f=0; f<nrows(local_features); f++)
+    {
+      vector_t data(ncols(local_features));
+      for (size_t i=0; i<ncols(local_features); i++)
+      {
+        data[i] = local_features[f][i];
+      }
+      double p = predict(model, data);
+
+      if (m_Y[f] == 1)
+      {
+        alt_likelihood = alt_likelihood * p;
+      }
+      else
+      {
+        alt_likelihood *= (1.0 - p);
+      }
+    }
+
+    double null_likelihood = 1.0;
+    for (size_t f=0; f<nrows(m_null_global_features); f++)
+    {
+      vector_t data(ncols(m_null_global_features));
+      for (size_t i=0; i<ncols(m_null_global_features); i++)
+      {
+        data[i] = m_null_global_features[f][i];
+      }
+      double p = predict(m_null_model, data);
+      if (m_Y[f] == 1)
+      {
+        null_likelihood *= p;
+      }
+      else
+      {
+        null_likelihood *= (1.0 - p);
+      }
+    }
+
+    if (null_likelihood == 0 && alt_likelihood == 0.0)
+    {
+      null_likelihood = 0.001;
+      alt_likelihood = 1.0;
+    }
+
+    double likelihood_ratio = null_likelihood / alt_likelihood;
+    double log_likelihood_ratio = -2.0 * (log(likelihood_ratio));
+
+    if (std::isnan(alt_likelihood))
+      assert(0);
+
+    if (std::fabs(log_likelihood_ratio) < s_epsilon ||
+                  log_likelihood_ratio < 0.0 ||
+                  std::isnan(alt_likelihood))
+    {
+      log_likelihood_ratio = 0.0;
+    }
+    ks.m_corrected = alglib::chisquarecdistribution(1, log_likelihood_ratio);
+    return ks.m_corrected;
+  }
+
+private:
+  void crash_on_error(std::string model, bool is_singular, bool is_nan, double error, int it);
+  void standardize();
 
 private:
   matrix_t m_Z;
@@ -128,11 +231,12 @@ private:
 
   size_t m_nb_controls;
   size_t m_nb_cases;
-  size_t m_size;
+  size_t m_size {m_nb_controls + m_nb_cases};
   size_t m_npc;
 
   size_t m_null_feature_count {0};
   size_t m_alt_feature_count {0};
+  size_t m_cov_count {0};
 
   std::vector<vector_t> m_null_global_features;
   std::vector<vector_t> m_alt_global_features;
@@ -143,9 +247,14 @@ private:
   std::vector<size_t> m_case_totals;
   std::vector<size_t> m_control_totals;
 
+  std::vector<size_t> m_control_idx;
+  std::vector<size_t> m_case_idx;
+
   std::vector<int> m_ginfo;
 
-  int m_unknown_gender;
+  std::mutex m_mutex;
+
+  int m_unknown_gender {static_cast<int>(m_size)};
 
 #ifdef DEV_MODE
   bool m_use_irls;
