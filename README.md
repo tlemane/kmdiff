@@ -31,7 +31,7 @@ Statistical methods used in kmdiff are from:
 <details><summary><strong>Ubuntu / Debian</strong></summary>
 
 <code>
-sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev libbz2-dev zlib1g-dev zlib1g
+sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev liblapacke-dev libbz2-dev zlib1g-dev zlib1g
 </code>
 
 </details>
