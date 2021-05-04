@@ -18,6 +18,9 @@
 #include "admutils.h" 
 #include "gval.h"
 
+size_t get_ncols();
+size_t get_nrows();
+size_t kjg_geno_get_normalized_rows (const size_t i, const size_t r, double *Y);
 size_t KJG_FPCA_ROWS = 256;
 
 void

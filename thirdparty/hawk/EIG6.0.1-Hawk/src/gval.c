@@ -23,6 +23,9 @@ static int *xxindex = NULL;
 static double *xmean, *xfancy;
 static double **gtable;
 
+int getcolxz(double *xcol, SNP *cupt, int *xindex, int *xtypes, 
+  int nrows, int col, double *xmean, double *xfancy, int *n0, int *n1)  ;
+
 void
 setgval (SNP ** xsnps, int nrows, Indiv ** indivmarkers, int numindivs,
 	 int *xindex, int *xtypes, int ncols)

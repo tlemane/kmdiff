@@ -2251,9 +2251,6 @@ double doinbreed(double *inb, double *inbest, double *inbsig, SNP **xsnplist, in
 
     free2D(&btop, nblocks);
     free2D(&bbot, nblocks);
-
-    return ;
-
 }
 
 double

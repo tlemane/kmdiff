@@ -119,6 +119,8 @@ fastmode (Kevin Galinski)
 bugfix to ldregx (Angela Yu)
 */
 
+int setid2pops(char* idpopstring, Indiv **indmarkers, int numindivs);
+#include "kjg_fpca.h"
 #if _WIN32
 // just in case we try a Windows port in the future
 #include <windows.h>
