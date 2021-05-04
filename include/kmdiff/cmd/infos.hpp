@@ -44,6 +44,8 @@ inline void main_infos()
   std::cerr << "conda: " << CONDA_BUILD << "\n";
   std::cerr << "static: " << STATIC_BUILD << "\n";
   std::cerr << "dev: " << DEV_BUILD << "\n";
+  std::cerr << "popsim: " << POPSIM_BUILD << "\n";
+  std::cerr << "popstrat: " << POPSTRAT_BUILD << "\n";
   std::cerr << "max_k: " << DEF_MAX_KMER << "\n";
   std::cerr << "max_c: " << std::numeric_limits<selectC<DEF_MAX_COUNT>::type>::max() << "\n";
   std::cerr << "\n";

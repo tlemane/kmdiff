@@ -55,16 +55,21 @@ struct diff_options : kmdiff_options
   bool kff;
   std::string seq_control;
   std::string seq_case;
+
+#ifdef WITH_POPSTRAT
   bool pop_correction;
   double kmer_pca;
   size_t ploidy;
   bool is_diploid;
   size_t npc;
+  std::string covariates;
+#endif
 
 #ifdef KMDIFF_DEV_MODE
   double learning_rate;
   size_t max_iteration;
   double epsilon;
+  bool stand {false};
 #endif
 
   std::string display()
@@ -82,15 +87,19 @@ struct diff_options : kmdiff_options
     RECORD(ss, kff);
     RECORD(ss, seq_control);
     RECORD(ss, seq_case);
+#ifdef WITH_POPSTRAT
     RECORD(ss, pop_correction);
     RECORD(ss, kmer_pca);
     RECORD(ss, ploidy);
     RECORD(ss, is_diploid);
     RECORD(ss, npc);
+    RECORD(ss, covariates);
+#endif
 #ifdef KMDIFF_DEV_MODE
-    double learning_rate;
-    size_t max_iteration;
-    double epsilon;
+    RECORD(ss, learning_rate);
+    RECORD(ss, max_iteration);
+    RECORD(ss, epsilon);
+    RECORD(ss, stand)
 #endif
     return ss.str();
   }

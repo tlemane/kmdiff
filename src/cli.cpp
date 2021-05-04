@@ -214,8 +214,8 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->setter_c(corr_setter);
 
   auto correction_warn = [cp](){
-    if (cp->value() == "bh")
-      spdlog::warn("-c/--correction bh: all significants k-mers will live in memory.");
+    if (cp->value() == "benjamini")
+      spdlog::warn("-c/--correction benjamini: all significants k-mers will live in memory.");
   };
 
   cp->callback(correction_warn);
@@ -251,10 +251,10 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->as_flag()
       ->setter(options->pop_correction);
 
-  diff_cmd->add_param("--kmer-pca", "Proportion of k-mers used for PCA.")
+  diff_cmd->add_param("--kmer-pca", "Proportion of k-mers used for PCA (in [0.0, 0.05]).")
       ->meta("FLOAT")
       ->def("0.001")
-      ->checker(bc::check::f::range(0.0, 0.1))
+      ->checker(bc::check::f::range(0.0, 0.05))
       ->setter(options->kmer_pca);
 
   auto ploidy_setter = [options](const std::string& v) {
@@ -269,11 +269,17 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->checker(bc::check::is_number)
       ->setter_c(ploidy_setter);
 
-  diff_cmd->add_param("--n-pc", "Number of principal components.")
+  diff_cmd->add_param("--n-pc", "Number of principal components (in [2, 10]).")
       ->meta("INT")
       ->def("2")
       ->checker(bc::check::f::range(2, 10))
       ->setter(options->npc);
+
+  diff_cmd->add_param("--covariates", "Covariate file.")
+      ->meta("FILE")
+      ->def("")
+      ->checker(bc::check::is_file)
+      ->setter(options->covariates);
 #endif
 
 #ifdef KMDIFF_DEV_MODE
@@ -295,6 +301,10 @@ kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t opt
       ->meta("FLOAT")
       ->def("1e-15")
       ->setter(options->epsilon);
+
+  diff_cmd->add_param("--stand", "Standardization.")
+      ->as_flag()
+      ->setter(options->stand);
 #endif
 
   add_common(diff_cmd, options);
