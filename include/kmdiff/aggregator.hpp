@@ -312,7 +312,9 @@ auto make_uncorrected_aggregator(std::vector<acc_t<KmerSign<MAX_K>>>& accumulato
                                                                   nullptr,
                                                                   opt,
                                                                   config);
+#ifdef WITH_POPSTRAT
   aggregator->add_pop_corrector(pop_corrector);
+#endif
   return aggregator;
 }
 
