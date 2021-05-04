@@ -1,4 +1,7 @@
-set(BLA_VENDOR OpenBLAS)
+if (NOT BLA_VENDOR)
+  set(BLA_VENDOR Generic)
+endif()
+
 find_package(BLAS)
 find_package(GSL)
 find_package(LAPACK)
