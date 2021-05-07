@@ -108,8 +108,8 @@ Options:
   -j <INT>           -> nb threads {8}.
   -p <0|1>           -> population stratification correction 0 = disable, 1 = enable {1}
                         (-p 1 requires GSL + lapack + OpenBLAS)
-  -d                 -> dev build {disable}.
-  -s                 -> static build {disable}.
+  -d                 -> dev build {disabled}.
+  -s                 -> static build {disabled}.
   -h                 -> show help.
 ```
 
@@ -241,7 +241,7 @@ OPTIONS
 
 **Outputs**
 * control significant k-mers: `<output_dir>/control_kmers.[fasta|kff]`
-* case significant k-mers: `<output_dir>/case_kmers.fasta.[fasta|kff]`
+* case significant k-mers: `<output_dir>/case_kmers.[fasta|kff]`
 
 Abundances and p-values are provided in fasta headers.
 
