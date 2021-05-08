@@ -105,7 +105,7 @@ kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t o
   int min = max / 2;
   count_cmd->add_param("-k/--kmer-size", fmt::format("size of k-mers [{}, {}]", min, max))
       ->checker(bc::check::is_number)
-      ->checker(bc::check::f::range(min, max))
+      ->checker(bc::check::f::range(min+1, max))
       ->setter(options->kmer_size)
       ->def(max == 32 ? "31" : "40")
       ->meta("INT");
@@ -491,11 +491,13 @@ kmdiff_options_t call_cli(std::shared_ptr<bc::Parser<1>> cli, call_options_t opt
            ->checker(bc::check::is_dir)
            ->setter(options->directory);
 
-  call_cmd->add_param("--seed-size", "Size of seeds for mapping.")
-          ->meta("INT")
-          ->def("10")
+  int max = requiredK<DEF_MAX_KMER>::value / 2;
+  int min = max / 2;
+  call_cmd->add_param("-k/--kmer-size", fmt::format("size of k-mers [{}, {}]", min, max))
           ->checker(bc::check::is_number)
-          ->setter(options->seed_size);
+          ->checker(bc::check::f::range(min+1, max))
+          ->setter(options->kmer_size)
+          ->meta("INT");
 
   add_common(call_cmd, options);
 
