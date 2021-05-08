@@ -499,6 +499,12 @@ kmdiff_options_t call_cli(std::shared_ptr<bc::Parser<1>> cli, call_options_t opt
           ->setter(options->kmer_size)
           ->meta("INT");
 
+  call_cmd->add_param("-s/--seed-size", "size of seeds for mapping")
+          ->meta("INT")
+          ->def("10")
+          ->checker(bc::check::is_number)
+          ->setter(options->kmer_size);
+
   add_common(call_cmd, options);
 
   return options;

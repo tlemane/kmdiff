@@ -400,6 +400,44 @@ void main_call(kmdiff_options_t options)
       "Case k-mers mapped ({} seconds).", case_time.elapsed<std::chrono::seconds>().count());
 
   spdlog::info("Mapping done ({} seconds).", call_timer.elapsed<std::chrono::seconds>().count());
+
+  //std::string abyss_bin = command_exists(get_binary_dir(), "ABYSS");
+  //std::string abyss_args = "-k{} -c0 -e0 {} -o {}";
+
+  //control_time.reset();
+  //spdlog::info("Assemble control k-mers...");
+
+  //std::string control_abyss_cmd = fmt::format(abyss_args);
+  //exec_external_cmd(abyss_bin, control_abyss_cmd);
+
+  //spdlog::info("Controls assembly done ({} seconds).",
+  //              control_time.elapsed<std::chrono::seconds>().count());
+
+  //case_time.reset();
+  //spdlog::info("Assemble case k-mers...");
+  //std::string case_abyss_cmd = fmt::format(abyss_args);
+  //exec_external_cmd(abyss_bin, case_abyss_cmd);
+  //spdlog::info("Cases assembly done ({} seconds).",
+  //             case_time.elapsed<std::chrono::seconds>().count());
+
+  //control_time.reset();
+  //spdlog::info("Map control contigs...");
+
+  //spdlog::info("Mapping of control contigs done ({} seconds).",
+  //              control_time.elapsed<std::chrono::seconds>().count());
+
+
+  //case_time.reset();
+  //spdlog::info("Map case contigs...");
+
+  //spdlog::info("Mapping of case contigs done ({} seconds).",
+  //              case_time.elapsed<std::chrono::seconds>().count());
+
+
+  //spdlog::info("Control k-mers mapping dump at: {}");
+  //spdlog::info("Case k-mers mapping dump at: {}");
+  //spdlog::info("Control contigs mapping dump at: {}");
+  //spdlog::info("Case contigs mapping dump at: {}");
 }
 
 };  // namespace kmdiff
