@@ -98,24 +98,27 @@ conda install -c bioconda -c tlemane -c tlemane/label/dev kmdiff # temporary
 
 ```
 kmdiff build script.
-Usage: 
-  ./install.sh [-r str] [-k int] [-t int] [-c int] [-p int] [-j int] [-d] [-s] [-h]
-Options: 
+Usage:
+  ./install.sh [-r str] [-k int] [-t int] [-c int] [-p int] [-e STR] [-j int] [-d] [-s] [-h]
+Options:
   -r <Release|Debug> -> build type {Release}.
   -k <0|32|64>       -> max k-mer size, 0 = both {0}.
-  -t <0|1|2>         -> tests: 0 = disable, 1 = compile, 2 = compile and run {2}.
+  -t <0|1|2>         -> tests: 0 = disabled, 1 = compile, 2 = compile and run {2}.
   -c <1|2|4>         -> byte per count {4}.
   -j <INT>           -> nb threads {8}.
-  -p <0|1>           -> population stratification correction 0 = disable, 1 = enable {1}
+  -p <0|1>           -> population stratification correction 0 = disabled, 1 = enabled {1}
                         (-p 1 requires GSL + lapack + OpenBLAS)
-  -d                 -> dev build {disable}.
-  -s                 -> static build {disable}.
+  -e <ENV-NAME>      -> build inside a conda environment
+  -d                 -> dev build {disabled}.
+  -s                 -> static build {disabled}.
   -h                 -> show help.
 ```
 
 `-k 0` produces two binaries:
-* `kmdiff` supports k in [16, 32]
-* `kmdiff64` supports k in [32, 64]
+* `kmdiff` supports k in [17, 32]
+* `kmdiff64` supports k in [33, 64]
+
+If you are unable to install the prerequisites on your system, use `-e <env_name>`. Compiler and build dependencies will thus be provided by a conda environment.
 
 ### 3. Static binary
 
