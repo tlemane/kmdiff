@@ -244,7 +244,7 @@ OPTIONS
 
 **Outputs**
 * control significant k-mers: `<output_dir>/control_kmers.[fasta|kff]`
-* case significant k-mers: `<output_dir>/case_kmers.fasta.[fasta|kff]`
+* case significant k-mers: `<output_dir>/case_kmers.[fasta|kff]`
 
 Abundances and p-values are provided in fasta headers.
 
