@@ -43,10 +43,31 @@ set(PROJECT_DESCRIPTION "kmdiff - Differential k-mers analysis.")
 set(CONTACT "teo.lemane@inria.fr")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O0 -g -DNDEBUG")
+
+add_library(build_type_flags INTERFACE)
+target_compile_options(build_type_flags INTERFACE
+  $<$<CONFIG:Debug>:-O0 -g>
+  $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>
+  $<$<CONFIG:Profile>:-O3 -ggdb3 -DNDEBUG -fno-inline>
+  $<$<CONFIG:Coverage>:-O0 -g --coverage>
+)
+
+add_library(warning_flags INTERFACE)
+target_compile_options(warning_flags INTERFACE
+  "-Wall"
+  "-Wextra"
+  "-Werror"
+  "-pedantic"
+)
+
+add_library(headers INTERFACE)
+target_include_directories(headers INTERFACE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_BINARY_DIR}/include
+)
+add_library(links INTERFACE)
+target_link_libraries(links INTERFACE pthread dl)
+add_library(deps INTERFACE)
 
 set(DEF_MAX_COUNT 65536)
 
@@ -82,93 +103,59 @@ configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINA
 
 set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
 
-set(SPD_INCLUDE ${THIRDPARTY_DIR}/spdlog/include)
-set(ROBIN_INCLUDE ${THIRDPARTY_DIR}/robin-hood-hashing/src/include)
-set(KMTRICKS_INCLUDE ${THIRDPARTY_DIR}/kmtricks/libs/ ${THIRDPARTY_DIR}/kmtricks/thirdparty/lz4/lib)
-set(FMT_INCLUDE ${THIRDPARTY_DIR}/fmt/include)
-set(BCLI_INCLUDE ${THIRDPARTY_DIR}/bcli/include)
-set(XXHASH_INCLUDE ${THIRDPARTY_DIR}/xxHash/)
-set(GTEST_INCLUDE ${THIRDPARTY_DIR}/googletest/googletest/include)
-set(LZ4_INCLUDE ${THIRDPARTY_DIR}/lz4)
-set(ALGLIB_INCLUDE ${THIRDPARTY_DIR}/alglib/src)
-set(CONFIG_INCLUDE ${PROJECT_BINARY_DIR}/include)
-set(KSEQPP_INCLUDE ${THIRDPARTY_DIR}/kseqpp/include ${THIRDPARTY_DIR}/kseqpp/include/kseq++)
-set(WGSIM_INCLUDE ${THIRDPARTY_DIR}/wgsim)
-set(KFF_INCLUDE ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
-set(HTSLIB_INCLUDE ${THIRDPARTY_BUILD_DIR}/HTSLIB/src/HTSLIB)
-set(ZLIB_INCLUDE ${THIRDPARTY_DIR}/zlib)
-set(KMTRICKS_LIB ${THIRDPARTY_DIR}/kmtricks/bin/lib)
-set(FMT_LIB ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build/)
-set(XXHASH_LIB ${THIRDPARTY_BUILD_DIR}/XXHASH/src/XXHASH-build)
-set(GTEST_LIB ${THIRDPARTY_BUILD_DIR}/GOOGLE_TEST/src/GOOGLE_TEST-build/lib)
-set(ALGLIB_LIB ${THIRDPARTY_BUILD_DIR}/ALGLIB/src/ALGLIB-build)
-set(WGSIM_LIB ${THIRDPARTY_BUILD_DIR}/WGSIM/src/WGSIM-build)
-set(KFF_LIB ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
-set(HTSLIB_LIB ${THIRDPARTY_BUILD_DIR}/HTSLIB/src/HTSLIB)
-set(ZLIB_LIB ${THIRDPARTY_BUILD_DIR}/ZLIB/src/ZLIB-build/)
-
-set(INCLUDES ${SPD_INCLUDE} ${KMTRICKS_INCLUDE} ${FMT_INCLUDE} ${BCLI_INCLUDE} ${CONFIG_INCLUDE} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include ${GTEST_INCLUDE} ${ROBIN_INCLUDE} ${XXHASH_INCLUDE} ${KSEQPP_INCLUDE} ${ALGLIB_INCLUDE} ${WGSIM_INCLUDE} ${KFF_INCLUDE} ${HTSLIB_INCLUDE} ${ZLIB_INCLUDE})
-
-set(DEPS XXHASH SPDLOG FMT KMTRICKS ALGLIB LZ4 KSEQPP WGSIM KFF HTSLIB ZLIB)
-
-include_directories(${INCLUDES})
-link_directories(${FMT_LIB} ${XXHASH_LIB} ${KMTRICKS_LIB} ${ALGLIB_LIB} ${WGSIM_LIB} ${KFF_LIB} ${HTSLIB_LIB} ${ZLIB_LIB})
-
-set(HTS_LINK "${HTSLIB_LIB}/libhts.a")
-set(ZLIB_LINK "${ZLIB_LIB}/libz.a")
-
-link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff ${HTS_LINK} ${ZLIB_LINK})
+set(HTS_LINK "${CMAKE_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/libhts.a")
+target_link_libraries(links INTERFACE ${HTS_LINK})
 
 add_subdirectory(include)
-add_subdirectory(src)
+#add_subdirectory(src)
 
-if (COMPILE_TESTS)
-  message(STATUS "COMPILE_TESTS=ON - Add target test.")
-  enable_testing()
-  add_subdirectory(tests)
-endif()
-
-if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
-  message(STATUS "MAKE_PACKAGE=ON - Add target package.")
-  include(CPackConfig)
-endif()
-
-add_custom_target(end ALL
-        ${CMAKE_COMMAND} -E cmake_echo_color --cyan
-        "Binaries: ${PROJECT_SOURCE_DIR}/bin"
-        COMMENT "" )
-
-if (COMPILE_TESTS)
-  add_dependencies(end ${PROJECT_NAME} ${PROJECT_NAME}-tests)
-else()
-  add_dependencies(end ${PROJECT_NAME})
-endif()
-
-if (BUILD_KMTRICKS_FULL)
-  add_custom_target(
-    copy_km ALL
-    DEPENDS KMTRICKS
-    COMMAND cp ./thirdparty/kmtricks/bin/km* ./bin
-    COMMAND cp ./thirdparty/kmtricks/kmtricks.py ./bin
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-  add_dependencies(copy_km KMTRICKS)
-endif()
-
-if (WITH_POPSTRAT)
-  if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)
-    add_custom_target(
-      copy_hawk ALL
-      DEPENDS HAWK
-      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ../bin
-      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ../bin
-      WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-    add_dependencies(copy_hawk HAWK)
-  endif()
-  add_custom_target(
-    clean_hawk ALL
-    DEPENDS HAWK
-    COMMAND make clobber
-    COMMAND make clean
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
-  add_dependencies(clean_hawk HAWK)
-endif()
+#if (COMPILE_TESTS)
+#  message(STATUS "COMPILE_TESTS=ON - Add target test.")
+#  enable_testing()
+#  add_subdirectory(tests)
+#endif()
+#
+#if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
+#  message(STATUS "MAKE_PACKAGE=ON - Add target package.")
+#  include(CPackConfig)
+#endif()
+#
+#add_custom_target(end ALL
+#        ${CMAKE_COMMAND} -E cmake_echo_color --cyan
+#        "Binaries: ${PROJECT_SOURCE_DIR}/bin"
+#        COMMENT "" )
+#
+#if (COMPILE_TESTS)
+#  add_dependencies(end ${PROJECT_NAME} ${PROJECT_NAME}-tests)
+#else()
+#  add_dependencies(end ${PROJECT_NAME})
+#endif()
+#
+#if (BUILD_KMTRICKS_FULL)
+#  add_custom_target(
+#    copy_km ALL
+#    DEPENDS KMTRICKS
+#    COMMAND cp ./thirdparty/kmtricks/bin/km* ./bin
+#    COMMAND cp ./thirdparty/kmtricks/kmtricks.py ./bin
+#    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+#  add_dependencies(copy_km KMTRICKS)
+#endif()
+#
+#if (WITH_POPSTRAT)
+#  if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)
+#    add_custom_target(
+#      copy_hawk ALL
+#      DEPENDS HAWK
+#      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ../bin
+#      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ../bin
+#      WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+#    add_dependencies(copy_hawk HAWK)
+#  endif()
+#  add_custom_target(
+#    clean_hawk ALL
+#    DEPENDS HAWK
+#    COMMAND make clobber
+#    COMMAND make clean
+#    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
+#  add_dependencies(clean_hawk HAWK)
+#endif()
