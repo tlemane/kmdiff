@@ -1,9 +1,6 @@
 [submodule "thirdparty/bcli"]
 	path = thirdparty/bcli
 	url = http://github.com/tlemane/bcli
-[submodule "thirdparty/kmtricks"]
-	path = thirdparty/kmtricks
-	url = http://github.com/tlemane/kmtricks
 [submodule "thirdparty/fmt"]
 	path = thirdparty/fmt
 	url = https://github.com/fmtlib/fmt
