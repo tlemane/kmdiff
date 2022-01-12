@@ -34,6 +34,3 @@
 [submodule "thirdparty/htslib"]
 	path = thirdparty/htslib
 	url = https://github.com/samtools/htslib
-[submodule "thirdparty/zlib"]
-	path = thirdparty/zlib
-	url = https://github.com/madler/zlib
