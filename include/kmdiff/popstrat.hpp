@@ -8,12 +8,11 @@
 #include <vector>
 #include <tuple>
 #include <mutex>
+#include <random>
 
 // ext
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
 
 // int
 #include <kmdiff/utils.hpp>
@@ -21,6 +20,7 @@
 #include <kmdiff/kmer.hpp>
 #include <kmdiff/model.hpp>
 #include <kmdiff/linear_model.hpp>
+#include <kmdiff/spinlock.hpp>
 
 const std::map<std::string, std::string> parfile_map = {
   {"genotypename", "gwas_eigenstratX.geno"},
@@ -42,11 +42,10 @@ void write_gwas_eigenstrat_total(const std::string& kmdir, const std::string& pa
 void run_eigenstrat_smartpca(const std::string& popstrat_dir,
                              const std::string& parfile,
                              const std::string& log, bool is_diploid);
-
 template<size_t MAX_C>
 class EigGenoFile
 {
-  using ctype = typename selectC<MAX_C>::type;
+  using ctype = typename km::selectC<MAX_C>::type;
 public:
   EigGenoFile(const std::string& path)
     : m_path(path), m_out(m_path, std::ios::out)
@@ -67,6 +66,9 @@ private:
   std::ofstream m_out;
 };
 
+template<size_t MAX_C>
+using eig_geno_t = std::shared_ptr<EigGenoFile<MAX_C>>;
+
 class EigSnpFile
 {
 public:
@@ -85,6 +87,40 @@ private:
   std::string m_path;
   std::ofstream m_out;
   size_t m_i;
+};
+
+using eig_snp_t = std::shared_ptr<EigSnpFile>;
+
+template<size_t MAX_C>
+class Sampler
+{
+  using count_type = typename km::selectC<MAX_C>::type;
+
+  public:
+    Sampler(eig_geno_t<MAX_C> geno, eig_snp_t snp, double v)
+      : m_geno(geno), m_snp(snp), m_v(v) {}
+
+    bool sample()
+    {
+      return m_dist(m_gen) < m_v;
+    }
+
+    void sample(const Range<count_type>& r1, const Range<count_type>& r2)
+    {
+      std::unique_lock<spinlock> lock(m_lock);
+      m_geno->push(r1, r2);
+      m_snp->push();
+    }
+
+  private:
+    std::default_random_engine m_gen;
+    std::uniform_real_distribution<double> m_dist {0.0, 1.0};
+
+    eig_geno_t<MAX_C> m_geno {nullptr};
+    eig_snp_t m_snp {nullptr};
+    double m_v {0.0};
+
+    spinlock m_lock;
 };
 
 class PopStratCorrector : public ICorrector

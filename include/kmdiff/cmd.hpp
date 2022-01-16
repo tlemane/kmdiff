@@ -17,9 +17,8 @@
  *****************************************************************************/
 
 #pragma once
+
 #include <kmdiff/cmd/cmd_common.hpp>
 #include <kmdiff/cmd/count.hpp>
-#include <kmdiff/cmd/diff.hpp>
 #include <kmdiff/cmd/infos.hpp>
-#include <kmdiff/cmd/popsim.hpp>
-#include <kmdiff/cmd/call.hpp>
+

@@ -1,27 +1,29 @@
 #pragma once
+
 #include <cmath>
 #include <cstdint>
 #include <vector>
 
 namespace kmdiff {
 
-class LogFactorialTable
-{
-public:
-  LogFactorialTable(size_t size);
-
-  double operator[](int i)
+  class LogFactorialTable
   {
-    if (i < m_size) return m_table[i];
-    return log_factorial(i);
-  }
+  public:
+    LogFactorialTable(size_t size);
 
-private:
-  double log_factorial(int k);
+    double operator[](int i)
+    {
+      if (i < m_size) return m_table[i];
+      return log_factorial(i);
+    }
 
-private:
-  std::vector<double> m_table;
-  size_t m_size;
-};
+  private:
+    double log_factorial(int k);
 
-}; // end of namespace kmdiff
+  private:
+    std::vector<double> m_table;
+    size_t m_size;
+  };
+
+} // end of namespace kmdiff
+

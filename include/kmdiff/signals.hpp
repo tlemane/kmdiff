@@ -32,126 +32,127 @@
 // int
 #include <kmdiff/config.hpp>
 
-namespace kmdiff
-{
-std::string signal_to_string(int signal)
-{
-  switch (signal)
+namespace kmdiff {
+
+  std::string signal_to_string(int signal)
   {
-    case SIGABRT:
-      return "SIGABRT";
-      break;
-    case SIGFPE:
-      return "SIGFPE";
-      break;
-    case SIGILL:
-      return "SIGILL";
-      break;
-    case SIGINT:
-      return "SIGINT";
-      break;
-    case SIGSEGV:
-      return "SIGSEGV";
-      break;
-    case SIGTERM:
-      return "SIGTERM";
-      break;
-    default:
-      return "?";
-      break;
-  }
-}
-
-class SignalHandler
-{
- public:
-  static SignalHandler& get()
-  {
-    static SignalHandler singleton;
-    return singleton;
-  }
-
-  template <typename Callback = void (*)(int)>
-  void init(Callback c = nullptr)
-  {
-    std::signal(SIGABRT, c ? c : default_callback);
-    std::signal(SIGFPE, c ? c : default_callback);
-    std::signal(SIGILL, c ? c : default_callback);
-    std::signal(SIGINT, c ? c : default_callback);
-    std::signal(SIGSEGV, c ? c : default_callback);
-    std::signal(SIGTERM, c ? c : default_callback);
-  }
-
-  template <typename Callback = void (*)(int)>
-  void set(int signal, Callback c)
-  {
-    std::signal(signal, c);
-  }
-
-  static void default_callback(int signal)
-  {
-    const std::string str_signal = strsignal(signal);
-    std::stringstream ss;
-    int size;
-    void* stack[256];
-    int max_size = sizeof(stack) / sizeof(stack[0]);
-    char buffer[1024];
-
-    size = backtrace(stack, max_size);
-    char** symbols = backtrace_symbols(stack, size);
-
-    std::string backtrace_path = fmt::format("./{}_backtrace.log", PROJECT_NAME);
-    ss << "\nBacktrace:\n";
-    for (int i = 1; i < size; i++)
+    switch (signal)
     {
-      Dl_info info;
-      if (dladdr(stack[i], &info))
+      case SIGABRT:
+        return "SIGABRT";
+        break;
+      case SIGFPE:
+        return "SIGFPE";
+        break;
+      case SIGILL:
+        return "SIGILL";
+        break;
+      case SIGINT:
+        return "SIGINT";
+        break;
+      case SIGSEGV:
+        return "SIGSEGV";
+        break;
+      case SIGTERM:
+        return "SIGTERM";
+        break;
+      default:
+        return "?";
+        break;
+    }
+  }
+
+  class SignalHandler
+  {
+   public:
+    static SignalHandler& get()
+    {
+      static SignalHandler singleton;
+      return singleton;
+    }
+
+    template <typename Callback = void (*)(int)>
+    void init(Callback c = nullptr)
+    {
+      std::signal(SIGABRT, c ? c : default_callback);
+      std::signal(SIGFPE, c ? c : default_callback);
+      std::signal(SIGILL, c ? c : default_callback);
+      std::signal(SIGINT, c ? c : default_callback);
+      std::signal(SIGSEGV, c ? c : default_callback);
+      std::signal(SIGTERM, c ? c : default_callback);
+    }
+
+    template <typename Callback = void (*)(int)>
+    void set(int signal, Callback c)
+    {
+      std::signal(signal, c);
+    }
+
+    static void default_callback(int signal)
+    {
+      const std::string str_signal = strsignal(signal);
+      std::stringstream ss;
+      int size;
+      void* stack[256];
+      int max_size = sizeof(stack) / sizeof(stack[0]);
+      char buffer[1024];
+
+      size = backtrace(stack, max_size);
+      char** symbols = backtrace_symbols(stack, size);
+
+      std::string backtrace_path = fmt::format("./{}_backtrace.log", PROJECT_NAME);
+      ss << "\nBacktrace:\n";
+      for (int i = 1; i < size; i++)
       {
-        char* name = NULL;
-        int status;
-        name = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+        Dl_info info;
+        if (dladdr(stack[i], &info))
+        {
+          char* name = NULL;
+          int status;
+          name = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
 
-        ss << i << " ";
-        ss << "0x" << std::setfill('0') << std::setw(sizeof(void*) * 2) << std::hex;
-        ss << reinterpret_cast<uint64_t>(stack[i]) << " " << std::dec;
-        snprintf(buffer, sizeof(buffer), "%s", status == 0 ? name : info.dli_sname);
-        ss << buffer;
-        ss << " + " << static_cast<char*>(stack[i]) - static_cast<char*>(info.dli_saddr) << "\n";
-        free(name);
+          ss << i << " ";
+          ss << "0x" << std::setfill('0') << std::setw(sizeof(void*) * 2) << std::hex;
+          ss << reinterpret_cast<uint64_t>(stack[i]) << " " << std::dec;
+          snprintf(buffer, sizeof(buffer), "%s", status == 0 ? name : info.dli_sname);
+          ss << buffer;
+          ss << " + " << static_cast<char*>(stack[i]) - static_cast<char*>(info.dli_saddr) << "\n";
+          free(name);
+        }
+        else
+        {
+          ss << i << " " << stack[i];
+        }
       }
-      else
+      free(symbols);
+
+      if (size == max_size) ss << "[truncated]\n";
+
+      if (signal != SIGINT)
       {
-        ss << i << " " << stack[i];
+        std::ofstream signal_file(backtrace_path, std::ios::out);
+        signal_file << ss.str();
+        signal_file.close();
       }
+      std::stringstream msg;
+      msg << fmt::format(
+          "Killed after receive {}:{}({}) signal.", str_signal, signal_to_string(signal), signal);
+      if (signal != SIGINT)
+      {
+        msg << fmt::format(" Demangled backtrace dumped at {}. ", backtrace_path);
+        const std::string issue =
+            "If the problem persists, please open an issue with the return of '{} infos' "
+            "and the content of {}";
+        msg << fmt::format(issue, PROJECT_NAME, backtrace_path);
+      }
+      spdlog::error(msg.str());
+
+      exit(signal);
     }
-    free(symbols);
 
-    if (size == max_size) ss << "[truncated]\n";
+   private:
+    SignalHandler() {}
+  };
 
-    if (signal != SIGINT)
-    {
-      std::ofstream signal_file(backtrace_path, std::ios::out);
-      signal_file << ss.str();
-      signal_file.close();
-    }
-    std::stringstream msg;
-    msg << fmt::format(
-        "Killed after receive {}:{}({}) signal.", str_signal, signal_to_string(signal), signal);
-    if (signal != SIGINT)
-    {
-      msg << fmt::format(" Demangled backtrace dumped at {}. ", backtrace_path);
-      const std::string issue =
-          "If the problem persists, please open an issue with the return of '{} infos' "
-          "and the content of {}";
-      msg << fmt::format(issue, PROJECT_NAME, backtrace_path);
-    }
-    spdlog::error(msg.str());
+} // end of namespace kmdiff
 
-    exit(signal);
-  }
-
- private:
-  SignalHandler() {}
-};
-
-};  // namespace kmdiff

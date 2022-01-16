@@ -27,8 +27,6 @@
 #include <kmdiff/cli/cli_common.hpp>
 #include <kmdiff/cmd/count.hpp>
 #include <kmdiff/config.hpp>
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
 
 namespace kmdiff
 {

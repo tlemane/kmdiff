@@ -32,7 +32,6 @@
 #include <kmdiff/cli/cli_common.hpp>
 #include <kmdiff/cmd/diff.hpp>
 #include <kmdiff/config.hpp>
-#include <kmdiff/model.hpp>
 
 namespace fs = std::filesystem;
 

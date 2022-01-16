@@ -30,11 +30,11 @@
 
 #include <bcli/bcli.hpp>
 
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
-
 // int
 #include <kmdiff/exceptions.hpp>
+
+#define KMTRICKS_PUBLIC
+#include <kmtricks/io/fof.hpp>
 
 namespace fs = std::filesystem;
 
@@ -50,7 +50,7 @@ using kmtricks_config_t = struct kmtricks_config;
 
 kmtricks_config_t get_kmtricks_config(const std::string& run_dir);
 
-std::vector<std::string> get_fofs(const std::string& run_dir);
+km::Fof get_fofs(const std::string& run_dir);
 
 std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     const std::string& run_dir, size_t nb_controls, size_t nb_cases);

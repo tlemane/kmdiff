@@ -22,91 +22,103 @@
 #include <csignal>
 #include <memory>
 #include <thread>
+#include <string>
+#include <vector>
 
 // ext
 #include <spdlog/spdlog.h>
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
 
 // int
-#include <kmdiff/accumulator.hpp>
-#include <kmdiff/blocking_queue.hpp>
 #include <kmdiff/cmd/cmd_common.hpp>
 #include <kmdiff/config.hpp>
 #include <kmdiff/kmtricks_utils.hpp>
+#include <kmdiff/correction.hpp>
+#include <kmdiff/aggregator.hpp>
+#include <kmdiff/accumulator.hpp>
 #include <kmdiff/merge.hpp>
-#include <kmdiff/model.hpp>
-#include <kmdiff/threadpool.hpp>
-#include <kmdiff/utils.hpp>
-#include <kmdiff/kff_utils.hpp>
+#include <kmdiff/cmd/diff_opt.hpp>
+
+#define KMTRICKS_PUBLIC
+#include <kmtricks/kmdir.hpp>
 
 namespace kmdiff
 {
-struct diff_options : kmdiff_options
+
+template<std::size_t KSIZE>
+void main_diff(kmdiff_options_t options)
 {
-  std::string kmtricks_dir;
-  std::string output_directory;
-  size_t nb_controls;
-  size_t nb_cases;
-  size_t coverage;
-  double threshold;
-  CorrectionType correction;
-  bool in_memory;
-  bool kff;
-  std::string seq_control;
-  std::string seq_case;
+  diff_options_t opt = std::static_pointer_cast<struct diff_options>(options);
+  spdlog::debug(opt->display());
 
-#ifdef WITH_POPSTRAT
-  bool pop_correction;
-  double kmer_pca;
-  size_t ploidy;
-  bool is_diploid;
-  size_t npc;
-  std::string covariates;
-#endif
+  Timer whole_time;
+  kmtricks_config_t config = get_kmtricks_config(opt->kmtricks_dir);
 
-#ifdef KMDIFF_DEV_MODE
-  double learning_rate;
-  size_t max_iteration;
-  double epsilon;
-  bool stand {false};
-#endif
+  std::string output_part_dir = fmt::format("{}/partitions", opt->output_directory);
+  fs::create_directories(output_part_dir);
 
-  std::string display()
+  spdlog::info("Process partitions...");
+  Timer merge_time;
+
+  km::KmDir::get().init(opt->kmtricks_dir, fmt::format("{}/kmtricks.fof", opt->kmtricks_dir));
+
+  std::vector<std::vector<std::string>> part_paths;
+  for (std::size_t i = 0; i < config.nb_partitions; i++)
+    part_paths.push_back(km::KmDir::get().get_files_to_merge(i, true, km::KM_FILE::KMER));
+
+  std::vector<acc_t<KmerSign<KSIZE>>> accumulators(config.nb_partitions);
+  for (std::size_t i = 0; i < accumulators.size(); i++)
   {
-    std::stringstream ss;
-    ss << this->global_display();
-    RECORD(ss, kmtricks_dir);
-    RECORD(ss, output_directory);
-    RECORD(ss, nb_controls);
-    RECORD(ss, nb_cases);
-    RECORD(ss, coverage);
-    RECORD(ss, threshold);
-    RECORD(ss, correction_type_str(correction));
-    RECORD(ss, in_memory);
-    RECORD(ss, kff);
-    RECORD(ss, seq_control);
-    RECORD(ss, seq_case);
-#ifdef WITH_POPSTRAT
-    RECORD(ss, pop_correction);
-    RECORD(ss, kmer_pca);
-    RECORD(ss, ploidy);
-    RECORD(ss, is_diploid);
-    RECORD(ss, npc);
-    RECORD(ss, covariates);
-#endif
-#ifdef KMDIFF_DEV_MODE
-    RECORD(ss, learning_rate);
-    RECORD(ss, max_iteration);
-    RECORD(ss, epsilon);
-    RECORD(ss, stand)
-#endif
-    return ss.str();
+    if (opt->in_memory)
+      accumulators[i] = std::make_shared<VectorAccumulator<KmerSign<KSIZE>>>(65536);
+    else
+      accumulators[i] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+        fmt::format("{}/acc_{}", output_part_dir, i), config.kmer_size
+      );
   }
-};
 
-using diff_options_t = std::shared_ptr<struct diff_options>;
+  std::vector<std::uint32_t> ab_mins(opt->nb_controls + opt->nb_cases, 1);
 
-void main_diff(kmdiff_options_t options);
+  auto [total_controls, total_cases] = get_total_kmer(opt->kmtricks_dir, opt->nb_controls, opt->nb_cases);
+
+  std::shared_ptr<Model<DMAX_C>> model = std::make_shared<PoissonLikelihood<DMAX_C>>(
+    opt->nb_controls, opt->nb_cases, total_controls, total_cases, 500);
+
+  global_merge<KSIZE, DMAX_C> merger(
+    part_paths, ab_mins, model, accumulators, config.kmer_size, opt->nb_controls,
+    opt->nb_cases, opt->threshold, opt->nb_threads);
+
+  std::size_t total_kmers = merger.merge();
+
+  spdlog::info("Partitions processed ({})", merge_time.formatted());
+
+  spdlog::info("Found {} significant k-mers.", merger.nb_sign());
+
+  std::shared_ptr<ICorrector> corrector {nullptr};
+  std::unique_ptr<IAggregator<KSIZE>> aggregator {nullptr};
+
+  spdlog::info("Aggregate and apply correction...");
+
+  if (opt->correction == CorrectionType::BONFERRONI)
+  {
+    corrector = std::make_shared<Bonferroni>(opt->threshold / 100000, total_kmers);
+    aggregator = std::make_unique<BonferonniAggregator<KSIZE>>(accumulators, corrector, opt, config);
+  }
+  else if (opt->correction == CorrectionType::BENJAMINI)
+  {
+    corrector = std::make_shared<BenjaminiHochberg>(opt->threshold / 100000, total_kmers);
+    aggregator = std::make_unique<BenjaminiAggregator<KSIZE>>(accumulators, corrector, opt, config);
+  }
+  else
+  {
+    aggregator = make_uncorrected_aggregator<KSIZE>(accumulators, opt, config, nullptr);
+  }
+
+  aggregator->run();
+
+  spdlog::info(
+    "Done in {}, Peak RSS -> {} MB.", whole_time.formatted(), static_cast<size_t>(get_peak_rss() * 0.0009765625)
+  );
+
+}
 
 };  // namespace kmdiff

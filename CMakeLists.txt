@@ -69,8 +69,21 @@ add_library(links INTERFACE)
 target_link_libraries(links INTERFACE pthread dl)
 add_library(deps INTERFACE)
 
+if (NOT KMER_LIST)
+  set (KMER_LIST "32 64 96 128")
+endif()
+
+string(REPLACE " " ";" KMER_LIST_ ${KMER_LIST})
+string(REPLACE " " "," KMER_LIST ${KMER_LIST})
+list(LENGTH KMER_LIST_ KMER_N)
+
+if (NOT MAX_C)
+  set (MAX_C 65536)
+endif()
+
 set(DEF_MAX_COUNT 65536)
 
+add_compile_definitions(DMAX_C=${MAX_C})
 if (DEV_MODE)
   add_compile_definitions(KMDIFF_DEV_MODE)
 endif()
@@ -107,7 +120,7 @@ set(HTS_LINK "${CMAKE_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/libhts.a")
 target_link_libraries(links INTERFACE ${HTS_LINK})
 
 add_subdirectory(include)
-#add_subdirectory(src)
+add_subdirectory(src)
 
 #if (COMPILE_TESTS)
 #  message(STATUS "COMPILE_TESTS=ON - Add target test.")
@@ -131,15 +144,14 @@ add_subdirectory(include)
 #  add_dependencies(end ${PROJECT_NAME})
 #endif()
 #
-#if (BUILD_KMTRICKS_FULL)
-#  add_custom_target(
-#    copy_km ALL
-#    DEPENDS KMTRICKS
-#    COMMAND cp ./thirdparty/kmtricks/bin/km* ./bin
-#    COMMAND cp ./thirdparty/kmtricks/kmtricks.py ./bin
-#    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-#  add_dependencies(copy_km KMTRICKS)
-#endif()
+
+add_custom_target(
+  copy_km ALL
+  DEPENDS KMTRICKS
+  COMMAND cp ./thirdparty/kmtricks/bin/kmtricks ./bin
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+)
+add_dependencies(copy_km KMTRICKS)
 #
 #if (WITH_POPSTRAT)
 #  if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)

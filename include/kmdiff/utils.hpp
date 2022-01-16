@@ -139,6 +139,7 @@ std::vector<T> slice(const std::vector<T>& v, int i, int j)
 class Timer
 {
   using time_point_t = std::chrono::time_point<std::chrono::steady_clock>;
+  using days = std::chrono::duration<int, std::ratio<86400>>;
 
  public:
   Timer();
@@ -160,6 +161,8 @@ class Timer
   }
 
   void reset();
+
+  std::string formatted();
 
  private:
   void start();

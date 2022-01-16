@@ -26,16 +26,39 @@
 #include <kmdiff/signals.hpp>
 #include <kmdiff/utils.hpp>
 
+#ifndef KMER_LIST
+  #define KMER_LIST KMD_KMER_LIST
+#endif
+
+#include <kmtricks/loop_executor.hpp>
+
+#define KM_EXEC_HELPER(helper_name, func_name)            \
+  template<std::size_t S>                                 \
+  struct helper_name                                      \
+  {                                                       \
+    template<typename... Args>                            \
+    auto operator()(Args&&... args)                       \
+    {                                                     \
+      return func_name<S>(std::forward<Args>(args)...);   \
+    }                                                     \
+  }
+
+KM_EXEC_HELPER(main_diff_exec, kmdiff::main_diff);
+
 int main(int argc, char* argv[])
 {
   using namespace kmdiff;
 
   SignalHandler::get().init();
-  kmdiffCli cli(PROJECT_NAME, PROJECT_DESC, PROJECT_VER, AUTHOR);
+  kmdiffCli cli(KMD_PROJECT_NAME, KMD_PROJECT_DESC, KMD_PROJECT_VER, AUTHOR);
 
   auto [cmd, options] = cli.parse(argc, argv);
 
   set_verbosity_level(options->verbosity);
+
+  std::size_t ksize {0};
+  if (cmd == COMMAND::DIFF)
+    ksize = 31;
 
   try
   {
@@ -45,7 +68,8 @@ int main(int argc, char* argv[])
     }
     else if (cmd == COMMAND::DIFF)
     {
-      main_diff(options);
+      km::const_loop_executor<0, KMER_N>::exec<main_diff_exec>(ksize, options);
+      //main_diff(options);
     }
     else if (cmd == COMMAND::INFOS)
     {
@@ -53,12 +77,12 @@ int main(int argc, char* argv[])
     }
     else if (cmd == COMMAND::CALL)
     {
-      main_call(options);
+      //main_call(options);
     }
 #ifdef WITH_POPSIM
     else if (cmd == COMMAND::POPSIM)
     {
-      main_popsim(options);
+      //main_popsim(options);
     }
 #endif
   }

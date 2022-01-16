@@ -13,29 +13,29 @@ void write_parfile(const std::string& path)
 void write_gwas_info(const std::string& kmfof, const std::string& path,
                      size_t nb_controls, size_t nb_cases)
 {
-  fof_t fof = parse_km_fof(kmfof);
-  std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
-  std::string parent = fs::path(path).parent_path().string();
-  std::string control_ind = fmt::format("{}/control.ind", parent);
-  std::ofstream coind(control_ind, std::ios::out); check_fstream_good(control_ind, coind);
-  std::string case_ind = fmt::format("{}/case.ind", parent);
-  std::ofstream caind(case_ind, std::ios::out); check_fstream_good(control_ind, coind);
+  //fof_t fof = parse_km_fof(kmfof);
+  //std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
+  //std::string parent = fs::path(path).parent_path().string();
+  //std::string control_ind = fmt::format("{}/control.ind", parent);
+  //std::ofstream coind(control_ind, std::ios::out); check_fstream_good(control_ind, coind);
+  //std::string case_ind = fmt::format("{}/case.ind", parent);
+  //std::ofstream caind(case_ind, std::ios::out); check_fstream_good(control_ind, coind);
 
-  int i = 0;
-  for (auto& [id, paths, min] : fof)
-  {
-    if (i < nb_controls)
-    {
-      out << id << "\tU\t" << "Control" << "\n";
-      coind << id << "\tU\t" << "Control" << "\n";
-    }
-    else
-    {
-      out << id << "\tU\t" << "Case" << "\n";
-      caind << id << "\tU\t" << "Case" << "\n";
-    }
-    i++;
-  }
+  //int i = 0;
+  //for (auto& [id, paths, min] : fof)
+  //{
+  //  if (i < nb_controls)
+  //  {
+  //    out << id << "\tU\t" << "Control" << "\n";
+  //    coind << id << "\tU\t" << "Control" << "\n";
+  //  }
+  //  else
+  //  {
+  //    out << id << "\tU\t" << "Case" << "\n";
+  //    caind << id << "\tU\t" << "Case" << "\n";
+  //  }
+  //  i++;
+  //}
 }
 
 void write_gwas_eigenstrat_total(const std::string& kmdir, const std::string& path)

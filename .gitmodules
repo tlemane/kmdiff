@@ -31,3 +31,9 @@
 [submodule "thirdparty/htslib"]
 	path = thirdparty/htslib
 	url = https://github.com/samtools/htslib
+[submodule "thirdparty/kmtricks"]
+	path = thirdparty/kmtricks
+	url = https://github.com/tlemane/kmtricks
+[submodule "thirdparty/indicators"]
+	path = thirdparty/indicators
+	url = https://github.com/p-ranav/indicators

@@ -17,29 +17,10 @@
  *****************************************************************************/
 
 #include <kmdiff/model.hpp>
+#include <kmdiff/correction.hpp>
 
 namespace kmdiff
 {
-std::string correction_type_str(const CorrectionType type)
-{
-  switch (type)
-  {
-    case CorrectionType::NOTHING:
-      return "NOTHING";
-      break;
-    case CorrectionType::BONFERRONI:
-      return "BONFERRONI";
-      break;
-    case CorrectionType::BENJAMINI:
-      return "BENJAMINI";
-      break;
-    default:
-      return "";
-      break;
-  }
-}
-
-bool ICorrector::apply(double p_value) { return true; }
 
 Bonferroni::Bonferroni(double threshold, size_t total)
     : m_threshold(threshold), m_total(static_cast<double>(total))

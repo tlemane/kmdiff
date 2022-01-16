@@ -26,11 +26,14 @@ ExternalProject_Add(
   KMTRICKS
   PREFIX KMTRICKS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
+  CMAKE_ARGS -DKMER_LIST=32 -DMAX_C=${MAX_C}
   INSTALL_COMMAND ""
 )
-target_include_directories(headers INTERFACE ${THIRD_DIR}/kmtricks/libs)
-target_link_directories(links INTERFACE ${THIRD_DIR}/kmtricks/bin/lib)
-target_link_libraries(links INTERFACE kmtricks)
+target_include_directories(headers INTERFACE
+  ${THIRD_DIR}/kmtricks/include
+  ${THIRD_DIR}/kmtricks/thirdparty/TurboPFor-Integer-Compression
+  ${THIRD_BINDIR}/KMTRICKS/src/KMTRICKS-build/include
+)
 
 ExternalProject_Add(GOOGLE_TEST
         PREFIX GOOGLE_TEST
@@ -102,6 +105,8 @@ ExternalProject_Add(
 )
 target_include_directories(headers INTERFACE ${THIRD_DIR}/kseqpp/include ${THIRD_DIR}/kseqpp/include/kseq++)
 add_dependencies(deps KSEQPP)
+
+target_include_directories(headers INTERFACE ${THIRD_DIR}/indicators/include)
 
 ExternalProject_Add(
   WGSIM

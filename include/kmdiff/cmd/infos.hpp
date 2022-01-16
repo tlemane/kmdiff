@@ -26,42 +26,39 @@
 #include <kmdiff/utils.hpp>
 #include <limits>
 
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
-
 namespace kmdiff
 {
+
 inline void main_infos()
 {
   std::cerr << "- HOST -"
             << "\n";
-  std::cerr << "build host: " << HOST_SYSTEM << "\n";
+  std::cerr << "build host: " << KMD_HOST_SYSTEM << "\n";
   std::cerr << "run host: " << get_uname_sr() << "\n";
   std::cerr << "- BUILD -"
             << "\n";
-  std::cerr << "c compiler: " << COMPILER_C << "\n";
-  std::cerr << "cxx compiler: " << COMPILER_CXX << "\n";
-  std::cerr << "conda: " << CONDA_BUILD << "\n";
-  std::cerr << "static: " << STATIC_BUILD << "\n";
-  std::cerr << "dev: " << DEV_BUILD << "\n";
-  std::cerr << "popsim: " << POPSIM_BUILD << "\n";
-  std::cerr << "popstrat: " << POPSTRAT_BUILD << "\n";
-  std::cerr << "max_k: " << DEF_MAX_KMER << "\n";
-  std::cerr << "max_c: " << std::numeric_limits<selectC<DEF_MAX_COUNT>::type>::max() << "\n";
+  std::cerr << "c compiler: " << KMD_COMPILER_C << "\n";
+  std::cerr << "cxx compiler: " << KMD_COMPILER_CXX << "\n";
+  std::cerr << "conda: " << KMD_CONDA_BUILD << "\n";
+  std::cerr << "static: " << KMD_STATIC_BUILD << "\n";
+  std::cerr << "dev: " << KMD_DEV_BUILD << "\n";
+  std::cerr << "popsim: " << KMD_POPSIM_BUILD << "\n";
+  std::cerr << "popstrat: " << KMD_POPSTRAT_BUILD << "\n";
+  std::cerr << "kmer: " << KMD_KMER_LIST_STR << "\n";
+  std::cerr << "max_c: " << DMAX_C << "\n";
   std::cerr << "\n";
   std::cerr << "- GIT SHA1 / VERSION -" << "\n";
-  std::cerr << "kmdiff: " << GIT_SHA1 << "\n";
-  std::cerr << "kmtricks: " << KMTRICKS_SHA1 << "\n";
-  std::cerr << "bcli: " << BCLI_SHA1 << "\n";
-  std::cerr << "fmt: " << FMT_SHA1 << "\n";
-  std::cerr << "kff: " << KFF_SHA1 << "\n";
-  std::cerr << "lz4: " << LZ4_SHA1 << "\n";
-  std::cerr << "robin-hood: " << ROBIN_SHA1 << "\n";
-  std::cerr << "spdlog: " << SPDLOG_SHA1 << "\n";
-  std::cerr << "xxHash: " << XXHASH_SHA1 << "\n";
-  std::cerr << "wgsim: " << WGSIM_SHA1 << "\n";
-  std::cerr << "zlib: " << ZLIB_SHA1 << "\n";
-  std::cerr << "htslib: " << HTSLIB_SHA1 << "\n";
+  std::cerr << "kmdiff: " << KMD_GIT_SHA1 << "\n";
+  std::cerr << "kmtricks: " << KMD_KMTRICKS_SHA1 << "\n";
+  std::cerr << "bcli: " << KMD_BCLI_SHA1 << "\n";
+  std::cerr << "fmt: " << KMD_FMT_SHA1 << "\n";
+  std::cerr << "kff: " << KMD_KFF_SHA1 << "\n";
+  std::cerr << "lz4: " << KMD_LZ4_SHA1 << "\n";
+  std::cerr << "robin-hood: " << KMD_ROBIN_SHA1 << "\n";
+  std::cerr << "spdlog: " << KMD_SPDLOG_SHA1 << "\n";
+  std::cerr << "xxHash: " << KMD_XXHASH_SHA1 << "\n";
+  std::cerr << "wgsim: " << KMD_WGSIM_SHA1 << "\n";
+  std::cerr << "htslib: " << KMD_HTSLIB_SHA1 << "\n";
   std::cerr << std::flush;
 }
 
