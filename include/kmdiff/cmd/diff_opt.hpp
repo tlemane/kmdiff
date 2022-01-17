@@ -14,14 +14,15 @@ namespace kmdiff {
     bool in_memory;
     bool kff;
 
-  #ifdef WITH_POPSTRAT
+    std::string model_lib_path;
+    std::string model_config;
+
     bool pop_correction;
     double kmer_pca;
     size_t ploidy;
     bool is_diploid;
     size_t npc;
     std::string covariates;
-  #endif
 
   #ifdef KMDIFF_DEV_MODE
     double learning_rate;

@@ -35,7 +35,15 @@ kmtricks_config_t get_kmtricks_config(const std::string& run_dir)
   for (std::string line; std::getline(in_config, line);)
   {
     if (bc::utils::contains(line, "kmer_size"))
-      config.kmer_size = bc::utils::lexical_cast<size_t>(bc::utils::split(line, ' ')[2]);
+    {
+      for (auto&& o : bc::utils::split(line, ','))
+      {
+        if (bc::utils::contains(o, "kmer_size"))
+        {
+          config.kmer_size = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
+        }
+      }
+    }
   }
 
   std::size_t np = 0;

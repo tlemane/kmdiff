@@ -63,4 +63,6 @@ namespace kmdiff
 
   kmdiff_EXCEPTION(SingularError);
 
+  kmdiff_EXCEPTION(PluginError);
+
 }  // end of namespace kmdiff

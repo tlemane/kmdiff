@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <kmdiff/linear_model.hpp>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -21,7 +22,7 @@ void print_matrix(const matrix_t& m)
   {
     for (auto& j: i)
     {
-      std::cerr << j << " ";
+      std::cerr << j << "\t";
     }
     std::cerr << "\n";
   }
@@ -30,11 +31,14 @@ void print_matrix(const matrix_t& m)
 std::string str_matrix(const matrix_t& m)
 {
   std::stringstream ss;
+  ss.precision(2);
+  ss << std::scientific;
+
   for (auto& i: m)
   {
     for (auto& j: i)
     {
-      ss << j << " ";
+      ss << j << "\t";
     }
     ss << "\n";
   }

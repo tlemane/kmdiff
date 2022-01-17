@@ -2,23 +2,23 @@
 
 namespace kmdiff {
 
-LogFactorialTable::LogFactorialTable(size_t size)
-  : m_size(size)
-{
-  m_table.reserve(m_size);
-  for (int i=0; i<size; i++)
-    m_table.push_back(log_factorial(i));
-}
-
-double LogFactorialTable::log_factorial(int k)
-{
-  double res = 0;
-  while (k > 1)
+  LogFactorialTable::LogFactorialTable(size_t size)
+    : m_size(size)
   {
-    res += log(k);
-    k--;
+    m_table.reserve(m_size);
+    for (int i=0; i<size; i++)
+      m_table.push_back(log_factorial(i));
   }
-  return res;
-}
 
-};
+  double LogFactorialTable::log_factorial(int k)
+  {
+    double res = 0;
+    while (k > 1)
+    {
+      res += log(k);
+      k--;
+    }
+    return res;
+  }
+
+} // end of namespace kmdiff

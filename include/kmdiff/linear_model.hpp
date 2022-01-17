@@ -3,6 +3,7 @@
 #include <tuple>
 #include <string>
 #include <sstream>
+#include <iomanip>
 
 #include <xmmintrin.h>
 
@@ -23,6 +24,9 @@ template<typename T>
 std::string str_vector(const T& v)
 {
   std::stringstream ss;
+  ss.precision(2);
+  ss << std::scientific;
+
   for (auto& e : v)
     ss << e << " ";
   return ss.str();

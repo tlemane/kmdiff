@@ -31,10 +31,11 @@
 #define KMTRICKS_PUBLIC
 #include <kmtricks/utils.hpp>
 
+#include <kmdiff/range.hpp>
 #include <kmdiff/kmer.hpp>
-#include <kmdiff/utils.hpp>
 #include <kmdiff/log_factorial_table.hpp>
 #include <kmdiff/correction.hpp>
+#include <kmdiff/imodel.hpp>
 
 namespace kmdiff {
 
@@ -45,12 +46,6 @@ namespace kmdiff {
 
    public:
     Model() {}
-
-    virtual std::tuple<double, Significance, double, double>
-    process(Range<count_t>& controls, Range<count_t>& cases)
-    {
-      return std::make_tuple(1, Significance::NO, 0.0, 0.0);
-    }
 
     template <typename Iterable>
     double compute_mean(Iterable&& v)
@@ -93,10 +88,11 @@ namespace kmdiff {
       double sd = std::sqrt(sq_sum / v.size() - mean * mean);
       return std::make_tuple(mean, sd);
     }
+
   };
 
   template <size_t MAX_C>
-  class PoissonLikelihood : public Model<MAX_C>
+  class PoissonLikelihood : public IModel<MAX_C>, public Model<MAX_C>
   {
   /*
     Based on https://github.com/atifrahman/HAWK
@@ -121,6 +117,7 @@ namespace kmdiff {
     {
     }
 
+    void configure(const std::string& config) {}
    private:
     double log_factorial(int k)
     {
@@ -143,7 +140,7 @@ namespace kmdiff {
    public:
 
     std::tuple<double, Significance, double, double>
-    process(Range<count_t>& controls, Range<count_t>& cases) override
+    process(const Range<count_t>& controls, const Range<count_t>& cases) override
     {
       auto [mean_control, positive_controls] = this->compute_sum_e(controls);
       auto [mean_case, positive_cases] = this->compute_sum_e(cases);

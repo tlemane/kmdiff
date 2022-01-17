@@ -157,14 +157,18 @@ namespace kmdiff {
     FileAccumulator(const std::string& path, size_t k_size = 0) : m_path(path), m_kmer_size(k_size)
     {
       m_out_stream = std::make_shared<out_stream_t>(m_path);
+      if constexpr(is_same_template_v<T, km::Kmer<32>>)
+        m_tmp.set_k(m_kmer_size);
     }
 
     void push(T&& e) override
     {
       m_size++;
       if constexpr (has_dump<T>::value)
+      {
         e.dump(m_out_stream);
-      else
+      }
+       else
       {
         m_tmp = e;
         m_out_stream->write(reinterpret_cast<char*>(&m_tmp), sizeof(e));

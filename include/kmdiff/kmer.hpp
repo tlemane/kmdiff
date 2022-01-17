@@ -18,17 +18,12 @@
 
 #pragma once
 
-// std
-#include <algorithm>
-#include <array>
-#include <bitset>
 #include <cstddef>
 #include <cstdint>
-#include <kmdiff/utils.hpp>
-#include <sstream>
 #include <vector>
+#include <memory>
+#include <fstream>
 
-// ext
 #include <xxhash.h>
 
 #include <kmtricks/kmer.hpp>
@@ -84,7 +79,6 @@ class KmerSign
   void load(std::shared_ptr<std::istream> stream, size_t size)
   {
     m_kmer.load(*stream);
-    // m_kmer.load(stream, size);
     stream->read(reinterpret_cast<char*>(&m_pvalue), sizeof(m_pvalue));
     stream->read(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
     stream->read(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));

@@ -1,4 +1,8 @@
 #include <kmdiff/popstrat.hpp>
+#include <kmdiff/utils.hpp>
+
+#define KMTRICKS_PUBLIC
+#include <kmtricks/io/fof.hpp>
 
 namespace kmdiff {
 
@@ -13,40 +17,40 @@ void write_parfile(const std::string& path)
 void write_gwas_info(const std::string& kmfof, const std::string& path,
                      size_t nb_controls, size_t nb_cases)
 {
-  //fof_t fof = parse_km_fof(kmfof);
-  //std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
-  //std::string parent = fs::path(path).parent_path().string();
-  //std::string control_ind = fmt::format("{}/control.ind", parent);
-  //std::ofstream coind(control_ind, std::ios::out); check_fstream_good(control_ind, coind);
-  //std::string case_ind = fmt::format("{}/case.ind", parent);
-  //std::ofstream caind(case_ind, std::ios::out); check_fstream_good(control_ind, coind);
+  km::Fof fof(kmfof);
+  std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
+  std::string parent = fs::path(path).parent_path().string();
+  std::string control_ind = fmt::format("{}/control.ind", parent);
+  std::ofstream coind(control_ind, std::ios::out); check_fstream_good(control_ind, coind);
+  std::string case_ind = fmt::format("{}/case.ind", parent);
+  std::ofstream caind(case_ind, std::ios::out); check_fstream_good(control_ind, coind);
 
-  //int i = 0;
-  //for (auto& [id, paths, min] : fof)
-  //{
-  //  if (i < nb_controls)
-  //  {
-  //    out << id << "\tU\t" << "Control" << "\n";
-  //    coind << id << "\tU\t" << "Control" << "\n";
-  //  }
-  //  else
-  //  {
-  //    out << id << "\tU\t" << "Case" << "\n";
-  //    caind << id << "\tU\t" << "Case" << "\n";
-  //  }
-  //  i++;
-  //}
+  int i = 0;
+  for (auto& [id, paths, min] : fof)
+  {
+    if (i < nb_controls)
+    {
+      out << id << "\tU\t" << "Control" << "\n";
+      coind << id << "\tU\t" << "Control" << "\n";
+    }
+    else
+    {
+      out << id << "\tU\t" << "Case" << "\n";
+      caind << id << "\tU\t" << "Case" << "\n";
+    }
+    i++;
+  }
 }
 
-void write_gwas_eigenstrat_total(const std::string& kmdir, const std::string& path)
+void write_gwas_eigenstrat_total(const std::string& path,
+                                 const std::vector<std::uint64_t>& c1,
+                                 const std::vector<std::uint64_t>& c2)
 {
-  std::string kmtotal = fmt::format("{}/storage/kmers.total", kmdir);
-  std::ifstream in(kmtotal, std::ios::in); check_fstream_good(kmtotal, in);
   std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
-  for (std::string line; std::getline(in, line);)
-  {
-    out << bc::utils::split(line, ' ')[1] << "\n";
-  }
+  for (auto& e : c1)
+    out << e << "\n";
+  for (auto& e : c2)
+    out << e << "\n";
 }
 
 void run_eigenstrat_smartpca(const std::string& popstrat_dir,
@@ -57,21 +61,21 @@ void run_eigenstrat_smartpca(const std::string& popstrat_dir,
   fs::current_path(popstrat_dir);
   std::string smartpca_bin = command_exists(get_binary_dir(), "smartpca");
   if (is_diploid)
-    std::system(fmt::format("{} -p {} > {}", smartpca_bin, parfile, log).c_str());
+    exec_external_cmd(smartpca_bin, fmt::format("-p {}", parfile), log);
   else
-    std::system(fmt::format("{} -V -p {} > {}", smartpca_bin, parfile, log).c_str());
+    exec_external_cmd(smartpca_bin, fmt::format("-V p {}", parfile), log);
+
   if (!fs::exists(fmt::format(parfile_map.at("evecoutname"), popstrat_dir)))
     throw EigenStratError("eigenstrat/smartpca failed.");
 
   std::string evec_bin = command_exists(get_binary_dir(), "evec2pca.perl");
   std::string pca_file = "gwas_eigenstrat.pca";
   std::string pcs_file = "pcs.evec";
-  std::system(fmt::format("{} {} {} {} {}",
-                          evec_bin,
-                          10,
-                          parfile_map.at("evecoutname"),
-                          parfile_map.at("indivname"),
-                          "gwas_eigenstrat.pca").c_str());
+  exec_external_cmd(evec_bin, fmt::format("{} {} {} {}",
+                                          10,
+                                          parfile_map.at("evecoutname"),
+                                          parfile_map.at("indivname"),
+                                          "gwas_eigenstrat.pca").c_str());
 
   std::ifstream in(pca_file, std::ios::in); check_fstream_good(pca_file, in);
   std::ofstream out(pcs_file, std::ios::out); check_fstream_good(pcs_file, in);
@@ -143,12 +147,11 @@ void PopStratCorrector::crash_on_error(std::string model, bool is_singular, bool
 void PopStratCorrector::load_Z(const std::string& path)
 {
   std::ifstream zin(path, std::ios::in); check_fstream_good(path, zin);
-  spdlog::warn(m_size);
   m_Z.resize(m_size, vector_t(s_pca_count, 0));
   for (size_t i=0; i<m_Z.size(); i++)
     for(size_t j=0; j<s_pca_count; j++)
       zin >> m_Z[i][j];
-  spdlog::debug("Z Matrix -> \n{}", str_matrix(m_Z));
+  spdlog::debug("\nZ Matrix: \n{}", str_matrix(m_Z));
 }
 
 void PopStratCorrector::load_Y(const std::string& path)
@@ -156,7 +159,7 @@ void PopStratCorrector::load_Y(const std::string& path)
   std::ifstream indin(path, std::ios::in); check_fstream_good(path, indin);
   for (std::string line; std::getline(indin, line);)
     m_Y.push_back(bc::utils::split(line, '\t')[2] == "Case" ? 0.0 : 1.0);
-  spdlog::debug("Y Vector -> \n{}", str_vector(m_Y));
+  spdlog::debug("\nY Vector: \n{}", str_vector(m_Y));
 }
 
 void PopStratCorrector::load_C(const std::string& path)
@@ -199,7 +202,7 @@ void PopStratCorrector::load_C(const std::string& path)
         m_C[cidx][j] = ctmp[idx][j];
       cidx++;
     }
-    spdlog::debug("C Matrix -> \n{}", str_matrix(m_C));
+    spdlog::debug("\nC Matrix: \n{}", str_matrix(m_C));
   }
 }
 
@@ -236,7 +239,7 @@ void PopStratCorrector::load_ginfo(const std::string& path)
       m_ginfo[gidx] = gtmp[m_case_idx[i]];
       gidx++;
     }
-    spdlog::debug("G Vector -> \n{}", str_vector(m_ginfo));
+    spdlog::debug("\nG Vector: \n{}", str_vector(m_ginfo));
   }
 }
 
@@ -282,8 +285,8 @@ void PopStratCorrector::init_global_features()
   if (s_stand)
     standardize();
 
-  spdlog::debug("NULL GLOBAL -> \n {}", str_matrix(m_null_global_features));
-  spdlog::debug("ALT GLOBAL -> \n {}", str_matrix(m_alt_global_features));
+  spdlog::debug("\nNULL GLOBAL: \n{}", str_matrix(m_null_global_features));
+  spdlog::debug("\nALT GLOBAL: \n{}", str_matrix(m_alt_global_features));
 
 #ifdef KMDIFF_DEV_MODE
   if (m_use_irls)

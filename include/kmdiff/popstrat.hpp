@@ -36,9 +36,14 @@ const std::map<std::string, std::string> parfile_map = {
 namespace kmdiff {
 
 void write_parfile(const std::string& path);
+
 void write_gwas_info(const std::string& kmfof, const std::string& path,
                      size_t nb_controls, size_t nb_cases);
-void write_gwas_eigenstrat_total(const std::string& kmdir, const std::string& path);
+
+void write_gwas_eigenstrat_total(const std::string& path,
+                                 const std::vector<std::uint64_t>& c1,
+                                 const std::vector<std::uint64_t>& c2);
+
 void run_eigenstrat_smartpca(const std::string& popstrat_dir,
                              const std::string& parfile,
                              const std::string& log, bool is_diploid);
@@ -61,6 +66,7 @@ public:
     m_out << "\n";
   }
 
+  void close() { m_out.close(); }
 private:
   std::string m_path;
   std::ofstream m_out;
@@ -77,16 +83,19 @@ public:
   {
     check_fstream_good(m_path, m_out);
   }
+
   void push()
   {
-    m_out << std::to_string(m_i) << "\t1\t0.0\t0\n";
+    m_out << m_i << "\t1\t0.0\t0\n";
     m_i++;
   }
+
+  void close() { m_out.close(); }
 
 private:
   std::string m_path;
   std::ofstream m_out;
-  size_t m_i;
+  size_t m_i {0};
 };
 
 using eig_snp_t = std::shared_ptr<EigSnpFile>;
@@ -108,6 +117,10 @@ class Sampler
     void sample(const Range<count_type>& r1, const Range<count_type>& r2)
     {
       std::unique_lock<spinlock> lock(m_lock);
+
+      if (!sample())
+        return;
+
       m_geno->push(r1, r2);
       m_snp->push();
     }
@@ -123,7 +136,7 @@ class Sampler
     spinlock m_lock;
 };
 
-class PopStratCorrector : public ICorrector
+class PopStratCorrector
 {
 private:
   inline static size_t s_max_iter = 100;

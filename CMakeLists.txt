@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(kmdiff VERSION 0.1 LANGUAGES C CXX)
+project(kmdiff VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 option(DEV_MODE "Dev mode" OFF)
-option(COMPILE_TESTS "Compile tests" OFF)
+option(WITH_TESTS "Compile tests" OFF)
 option(BUILD_KMTRICKS_FULL "Build kmtricks binaries" OFF)
 option(MAKE_PACKAGE "Build package" OFF)
 option(CONDA_BUILD "Build inside conda env" OFF)
@@ -122,12 +122,14 @@ target_link_libraries(links INTERFACE ${HTS_LINK})
 add_subdirectory(include)
 add_subdirectory(src)
 
-#if (COMPILE_TESTS)
-#  message(STATUS "COMPILE_TESTS=ON - Add target test.")
+add_subdirectory(plugins)
+
+#if (WITH_TESTS)
 #  enable_testing()
 #  add_subdirectory(tests)
 #endif()
-#
+
+
 #if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
 #  message(STATUS "MAKE_PACKAGE=ON - Add target package.")
 #  include(CPackConfig)
@@ -152,22 +154,22 @@ add_custom_target(
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
 add_dependencies(copy_km KMTRICKS)
-#
-#if (WITH_POPSTRAT)
-#  if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)
-#    add_custom_target(
-#      copy_hawk ALL
-#      DEPENDS HAWK
-#      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ../bin
-#      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ../bin
-#      WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-#    add_dependencies(copy_hawk HAWK)
-#  endif()
-#  add_custom_target(
-#    clean_hawk ALL
-#    DEPENDS HAWK
-#    COMMAND make clobber
-#    COMMAND make clean
-#    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
-#  add_dependencies(clean_hawk HAWK)
-#endif()
+
+if (WITH_POPSTRAT)
+  if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)
+    add_custom_target(
+      copy_hawk ALL
+      DEPENDS HAWK
+      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ../bin
+      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ../bin
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+    add_dependencies(copy_hawk HAWK)
+  endif()
+  add_custom_target(
+    clean_hawk ALL
+    DEPENDS HAWK
+    COMMAND make clobber
+    COMMAND make clean
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
+  add_dependencies(clean_hawk HAWK)
+endif()
