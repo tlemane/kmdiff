@@ -82,7 +82,11 @@ namespace kmdiff {
 
     std::vector<std::uint32_t> ab_mins(opt->nb_controls + opt->nb_cases, 1);
 
-    auto [total_controls, total_cases] = get_total_kmer(opt->kmtricks_dir, opt->nb_controls, opt->nb_cases);
+    auto [total_controls, total_cases] = get_total_kmer(opt->kmtricks_dir, opt->nb_controls, opt->nb_cases, config.abundance_min);
+
+    spdlog::debug("\nNb k-mers controls: {}\n Nb k-mers cases: {}",
+                  str_vector(total_controls),
+                  str_vector(total_cases));
 
     std::shared_ptr<IModel<DMAX_C>> model {nullptr};
 
@@ -111,13 +115,15 @@ namespace kmdiff {
 
     global_merge<KSIZE, DMAX_C> merger(
       part_paths, ab_mins, model, accumulators, config.kmer_size, opt->nb_controls,
-      opt->nb_cases, opt->threshold, opt->nb_threads, sampler);
+      opt->nb_cases, opt->threshold/opt->cutoff, opt->nb_threads, sampler);
 
     std::size_t total_kmers = merger.merge();
+    auto [sign_controls, sign_cases] = merger.signs();
 
     spdlog::info("Partitions processed ({})", merge_time.formatted());
 
-    spdlog::info("{} significant k-mers.", merger.nb_sign());
+    spdlog::info("{}/{} significant k-mers.", merger.nb_sign(), total_kmers);
+    spdlog::info("Before correction: {} (control), {} (case).", sign_controls, sign_cases);
 
     #ifdef KMDIFF_DEV_MODE
       PopStratCorrector::s_learn_rate = opt->learning_rate;
@@ -126,7 +132,12 @@ namespace kmdiff {
       PopStratCorrector::s_stand = opt->stand;
     #endif
 
-    geno->close(); snp->close();
+    if (opt->pop_correction)
+    {
+      geno->close();
+      snp->close();
+    }
+
     std::shared_ptr<PopStratCorrector> pop_corrector {nullptr};
 
     if (opt->pop_correction)
@@ -176,7 +187,10 @@ namespace kmdiff {
     indicators::ProgressBar* pb = nullptr;
 
     if (spdlog::get_level() != spdlog::level::debug)
+    {
       pb = get_progress_bar("aggregate", config.nb_partitions, 50, indicators::Color::white, true);
+      pb->print_progress();
+    }
 
     if (opt->correction == CorrectionType::BONFERRONI)
     {

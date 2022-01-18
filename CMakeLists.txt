@@ -11,6 +11,7 @@ option(CONDA_BUILD "Build inside conda env" OFF)
 option(STATIC "Static build (requires static zlib)" OFF)
 option(WITH_POPSIM "Build kmdiff popsim" OFF)
 option(WITH_POPSTRAT "Build with population stratification support" ON)
+option(WITH_PLUGIN "Build plugins" OFF)
 
 if (WITH_POPSTRAT)
   include(Depends)
@@ -111,7 +112,6 @@ get_sha1(${THIRDPARTY_DIR}/xxHash XXHASH_SHA1)
 get_sha1(${THIRDPARTY_DIR}/wgsim WGSIM_SHA1)
 get_sha1(${THIRDPARTY_DIR}/zlib ZLIB_SHA1)
 
-set(HTSLIB_SHA1 "8cab518f97bbdf43165320c3a4bdef1e9a42893a")
 configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINARY_DIR}/include/kmdiff/config.hpp)
 
 set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
@@ -122,7 +122,9 @@ target_link_libraries(links INTERFACE ${HTS_LINK})
 add_subdirectory(include)
 add_subdirectory(src)
 
-add_subdirectory(plugins)
+if (WITH_PLUGIN)
+  add_subdirectory(plugins)
+endif()
 
 #if (WITH_TESTS)
 #  enable_testing()

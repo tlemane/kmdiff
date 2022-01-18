@@ -39,9 +39,9 @@ kmtricks_config_t get_kmtricks_config(const std::string& run_dir)
       for (auto&& o : bc::utils::split(line, ','))
       {
         if (bc::utils::contains(o, "kmer_size"))
-        {
           config.kmer_size = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
-        }
+        if (bc::utils::contains(o, "abundance_min"))
+          config.abundance_min = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
       }
     }
   }
@@ -67,7 +67,8 @@ km::Fof get_fofs(const std::string& run_dir)
 std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
   const std::string& run_dir,
   size_t nb_controls,
-  size_t nb_cases)
+  size_t nb_cases,
+  size_t ab_min)
 {
   auto fof = get_fofs(run_dir);
   std::vector<size_t> total_controls(nb_controls);
@@ -78,8 +79,14 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     std::string fid = fof.get_id(i);
     std::string hpath = km::KmDir::get().get_hist_path(fid);
     km::HistReader hr(hpath);
-    auto h = hr.infos();
-    total_controls[i] = h.total;
+
+    auto hist = hr.get();
+    auto info = hr.infos();
+    auto& v = hist->get_vec();
+
+    total_controls[i] = info.total;
+    for (std::size_t j=1; j<ab_min; j++)
+      total_controls[i] -= (j) * v[j-1];
   }
 
   for (std::size_t i = nb_cases; i < nb_cases + total_cases.size(); i++)
@@ -87,8 +94,14 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     std::string fid = fof.get_id(i);
     std::string hpath = km::KmDir::get().get_hist_path(fid);
     km::HistReader hr(hpath);
-    auto h = hr.infos();
-    total_cases[i - nb_cases] = h.total;
+
+    auto hist = hr.get();
+    auto info = hr.infos();
+    auto& v = hist->get_vec();
+
+    total_cases[i - nb_cases] = info.total;
+    for (std::size_t j=1; j<ab_min; j++)
+      total_cases[i - nb_cases] -= (j) * v[j-1];
   }
 
   return std::make_tuple(std::move(total_controls), std::move(total_cases));

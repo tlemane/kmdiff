@@ -54,7 +54,7 @@ ExternalProject_Add(
   PREFIX XXHASH
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/xxHash
   SOURCE_SUBDIR "cmake_unofficial"
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF
+  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DXXHASH_BUILD_XXHSUM=0FF
   INSTALL_COMMAND ""
 )
 target_include_directories(headers INTERFACE ${THIRD_DIR}/xxHash)

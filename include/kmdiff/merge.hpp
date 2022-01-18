@@ -85,6 +85,12 @@ class diff_observer : public km::IMergeObserver<KSIZE, CMAX>
           for (std::size_t i=0; i < counts.size(); i++) { m_counts[i] = counts[i]; }
           KmerSign<KSIZE> ks(std::move(kmer_), p_value, sign, m_counts, mean_ctr, mean_case);
         #endif
+
+        if (sign == Significance::CONTROL)
+          m_sign_controls++;
+        else
+          m_sign_cases++;
+
         m_acc->push(std::move(ks));
         m_sign_kmer_per_part++;
       }
@@ -92,6 +98,11 @@ class diff_observer : public km::IMergeObserver<KSIZE, CMAX>
 
     std::size_t total() const { return m_total; }
     std::size_t nb_sign() const { return m_sign_kmer_per_part; }
+
+    std::tuple<std::size_t, std::size_t> nb_signs() const
+    {
+      return std::make_tuple(m_sign_controls, m_sign_cases);
+    }
 
   protected:
     const std::shared_ptr<IModel<CMAX>> m_model {nullptr};
@@ -103,6 +114,8 @@ class diff_observer : public km::IMergeObserver<KSIZE, CMAX>
     std::size_t m_part {0};
     double m_threshold {0};
     std::vector<double> m_counts;
+    std::size_t m_sign_controls {0};
+    std::size_t m_sign_cases {0};
 };
 
 template<std::size_t KSIZE, std::size_t CMAX>
@@ -142,6 +155,11 @@ class diff_observer_strat : public diff_observer<KSIZE, CMAX>
           for (std::size_t i=0; i < counts.size(); i++) { this->m_counts[i] = counts[i]; }
           KmerSign<KSIZE> ks(std::move(kmer_), p_value, sign, this->m_counts, mean_ctr, mean_case);
         #endif
+
+        if (sign == Significance::CONTROL)
+          this->m_sign_controls++;
+        else
+          this->m_sign_cases++;
 
         this->m_acc->push(std::move(ks));
         this->m_sign_kmer_per_part++;
@@ -184,13 +202,20 @@ class global_merge
       const std::size_t size = m_part_paths.size();
 
       std::vector<size_t> total_kmers(size);
+
       m_nb_signs.resize(size, 0);
+      m_sign_controls.resize(size, 0);
+      m_sign_cases.resize(size, 0);
 
       std::exception_ptr ep = nullptr;
 
       indicators::ProgressBar* pb = nullptr;
+
       if (spdlog::get_level() != spdlog::level::debug)
+      {
         pb = get_progress_bar("partitions", size, 50, indicators::Color::white, true);
+        pb->print_progress();
+      }
 
       for (std::size_t p = 0; p < size; p++)
       {
@@ -216,6 +241,12 @@ class global_merge
 
           total_kmers[p] = dynamic_cast<diff_observer<KSIZE, CMAX>*>(diff.get())->total();
           this->m_nb_signs[p] = dynamic_cast<diff_observer<KSIZE, CMAX>*>(diff.get())->nb_sign();
+
+          auto [co, ca] = dynamic_cast<diff_observer<KSIZE, CMAX>*>(diff.get())->nb_signs();
+
+          this->m_sign_controls[p] += co;
+          this->m_sign_cases[p] += ca;
+
           this->m_accs[p]->finish();
 
           spdlog::debug("Partition {} processed. ({})", p, mp_timer.formatted());
@@ -241,6 +272,14 @@ class global_merge
       return std::accumulate(m_nb_signs.begin(), m_nb_signs.end(), 0ULL);
     }
 
+    std::tuple<size_t, size_t> signs() const
+    {
+      return std::make_tuple(
+        std::accumulate(m_sign_controls.begin(), m_sign_controls.end(), 0ULL),
+        std::accumulate(m_sign_cases.begin(), m_sign_cases.end(), 0ULL)
+      );
+    }
+
     private:
       std::vector<std::vector<std::string>>& m_part_paths;
       std::vector<std::uint32_t> m_ab_thresholds;
@@ -253,6 +292,8 @@ class global_merge
       std::size_t m_nb_threads {1};
 
       std::vector<size_t> m_nb_signs;
+      std::vector<size_t> m_sign_controls;
+      std::vector<size_t> m_sign_cases;
 
       std::shared_ptr<Sampler<CMAX>> m_sampler {nullptr};
 };

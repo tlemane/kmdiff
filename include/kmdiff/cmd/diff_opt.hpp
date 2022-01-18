@@ -10,6 +10,7 @@ namespace kmdiff {
     size_t nb_controls;
     size_t nb_cases;
     double threshold;
+    double cutoff;
     CorrectionType correction;
     bool in_memory;
     bool kff;
@@ -40,6 +41,7 @@ namespace kmdiff {
       KRECORD(ss, nb_controls);
       KRECORD(ss, nb_cases);
       KRECORD(ss, threshold);
+      KRECORD(ss, cutoff);
       KRECORD(ss, correction_type_str(correction));
       KRECORD(ss, in_memory);
       KRECORD(ss, kff);

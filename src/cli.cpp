@@ -181,7 +181,13 @@ namespace kmdiff {
         ->meta("FLOAT")
         ->checker(sign_check)
         ->setter(options->threshold)
-        ->def("0.005");
+        ->def("0.05");
+
+    diff_cmd->add_param("--cutoff", "cutoff")
+      ->meta("INT")
+      ->checker(bc::check::is_number)
+      ->setter(options->cutoff)
+      ->def("100000");
 
     auto corr_setter = [options](const std::string& v) {
       if (v == "bonferroni")
