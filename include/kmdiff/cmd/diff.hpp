@@ -195,7 +195,7 @@ namespace kmdiff {
     Timer agg_time;
 
     std::shared_ptr<ICorrector> corrector {nullptr};
-    std::unique_ptr<IAggregator2<KSIZE>> agg {nullptr};
+    std::unique_ptr<IAggregator<KSIZE>> agg {nullptr};
 
     if (opt->correction == CorrectionType::NOTHING)
       spdlog::info("Aggregate partitions...");
@@ -228,7 +228,6 @@ namespace kmdiff {
                                                 opt->nb_threads,
                                                 pb);
 
-      //aggregator = std::make_unique<BonferonniAggregator<KSIZE>>(accumulators, corrector, opt, config, pb);
     }
     else if (opt->correction == CorrectionType::BENJAMINI)
     {
@@ -242,7 +241,6 @@ namespace kmdiff {
                                                        pb);
 
 
-     // aggregator = std::make_unique<BenjaminiAggregator<KSIZE>>(accumulators, corrector, opt, config, pb);
     }
 
     agg->run();
