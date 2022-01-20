@@ -138,59 +138,59 @@ namespace kmdiff {
       snp->close();
     }
 
-
-    std::vector<acc_t<KmerSign<KSIZE>>> pop_accumulators;
-
-    if (opt->pop_correction)
-    {
-      std::string gwas_eigenstratX_ind = fmt::format("{}/gwas_eigenstratX.ind", pop_dir);
-      std::string gwas_eigenstratX_total = fmt::format("{}/gwas_eigenstratX.total", pop_dir);
-      std::string pcs_evec = fmt::format("{}/pcs.evec", pop_dir);
-
-      spdlog::info("PCA for population stratification correction...");
-
-      Timer pca_time;
-
-      std::string parfile_path = fmt::format("{}/parfile.txt", pop_dir);
-      std::string gwas_info_path = fmt::format("{}/gwas_infos.txt", pop_dir);
-      std::string fof = fmt::format("{}/kmtricks.fof", opt->kmtricks_dir);
-
-      write_parfile(parfile_path);
-      write_gwas_info(fof, gwas_info_path, opt->nb_controls, opt->nb_cases);
-      write_gwas_info(fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases);
-      write_gwas_eigenstrat_total(gwas_eigenstratX_total, total_controls, total_cases);
-
-      std::string log_eigenstrat = "eigenstrat.log";
-      run_eigenstrat_smartpca(pop_dir, "parfile.txt", log_eigenstrat, opt->is_diploid);
-
-      spdlog::info("PCA done. ({}).", pca_time.formatted());
-
-      Timer pop_time;
-
-      spdlog::info("Apply population stratification correction...");
-      auto pop_corrector = std::make_shared<pop_strat_corrector>(
-        opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->npc);
-
-      pop_corrector->load_Z(pcs_evec);
-      pop_corrector->load_Y(gwas_eigenstratX_ind);
-      pop_corrector->load_C(opt->covariates);
-      pop_corrector->load_ginfo(gwas_info_path);
-      pop_corrector->init_global_features();
-
-      pop_accumulators.resize(accumulators.size());
-
-      for (std::size_t p = 0; p < accumulators.size(); p++)
+    #ifdef WITH_POPSTRAT
+      std::vector<acc_t<KmerSign<KSIZE>>> pop_accumulators;
+      if (opt->pop_correction)
       {
-        pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
-          fmt::format("{}/accp_{}", output_part_dir, p), config.kmer_size);
+        std::string gwas_eigenstratX_ind = fmt::format("{}/gwas_eigenstratX.ind", pop_dir);
+        std::string gwas_eigenstratX_total = fmt::format("{}/gwas_eigenstratX.total", pop_dir);
+        std::string pcs_evec = fmt::format("{}/pcs.evec", pop_dir);
+
+        spdlog::info("PCA for population stratification correction...");
+
+        Timer pca_time;
+
+        std::string parfile_path = fmt::format("{}/parfile.txt", pop_dir);
+        std::string gwas_info_path = fmt::format("{}/gwas_infos.txt", pop_dir);
+        std::string fof = fmt::format("{}/kmtricks.fof", opt->kmtricks_dir);
+
+        write_parfile(parfile_path);
+        write_gwas_info(fof, gwas_info_path, opt->nb_controls, opt->nb_cases);
+        write_gwas_info(fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases);
+        write_gwas_eigenstrat_total(gwas_eigenstratX_total, total_controls, total_cases);
+
+        std::string log_eigenstrat = "eigenstrat.log";
+        run_eigenstrat_smartpca(pop_dir, "parfile.txt", log_eigenstrat, opt->is_diploid);
+
+        spdlog::info("PCA done. ({}).", pca_time.formatted());
+
+        Timer pop_time;
+
+        spdlog::info("Apply population stratification correction...");
+        auto pop_corrector = std::make_shared<pop_strat_corrector>(
+          opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->npc);
+
+        pop_corrector->load_Z(pcs_evec);
+        pop_corrector->load_Y(gwas_eigenstratX_ind);
+        pop_corrector->load_C(opt->covariates);
+        pop_corrector->load_ginfo(gwas_info_path);
+        pop_corrector->init_global_features();
+
+        pop_accumulators.resize(accumulators.size());
+
+        for (std::size_t p = 0; p < accumulators.size(); p++)
+        {
+          pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+            fmt::format("{}/accp_{}", output_part_dir, p), config.kmer_size);
+        }
+
+        pop_corrector->apply(accumulators, pop_accumulators, 1);
+
+        accumulators.swap(pop_accumulators);
+
+        spdlog::info("Population correction done. ({}).", pop_time.formatted());
       }
-
-      pop_corrector->apply(accumulators, pop_accumulators, 1);
-
-      accumulators.swap(pop_accumulators);
-
-      spdlog::info("Population correction done. ({}).", pop_time.formatted());
-    }
+    #endif
 
     Timer agg_time;
 
