@@ -211,9 +211,9 @@ class global_merge
 
       indicators::ProgressBar* pb = nullptr;
 
-      if (spdlog::get_level() != spdlog::level::debug)
+      if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
       {
-        pb = get_progress_bar("partitions", size, 50, indicators::Color::white, true);
+        pb = get_progress_bar("progress", size, 50, indicators::Color::white, true);
         pb->print_progress();
       }
 

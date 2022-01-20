@@ -147,8 +147,9 @@ namespace kmdiff {
 
       size_t positive_counts = positive_controls + positive_cases;
 
-      double mean = (mean_control + mean_case) / static_cast<double>(m_sum_controls + m_sum_cases);
       double positive_ratio = positive_counts / static_cast<double>(m_nb_controls + m_nb_cases);
+
+      double mean = (mean_control + mean_case) / static_cast<double>(m_sum_controls + m_sum_cases);
 
       double null_hypothesis = 0;
       double alt_hypothesis = 0;
@@ -165,6 +166,8 @@ namespace kmdiff {
       double p_value = alglib::chisquarecdistribution(1, 2 * likelihood_ratio);
 
       Significance sign;
+
+      mean_control = mean_control * m_sum_cases / m_sum_controls;
 
       if (mean_control < mean_case)
         sign = Significance::CASE;
@@ -190,38 +193,6 @@ namespace kmdiff {
 
     size_t m_preload;
     LogFactorialTable m_lf_table{m_preload};
-  };
-
-  class ICorrector
-  {
-   public:
-    ICorrector() {}
-    virtual bool apply(double p_value) = 0;
-   protected:
-    CorrectionType m_type {CorrectionType::NOTHING};
-  };
-
-  class Bonferroni : public ICorrector
-  {
-   public:
-    Bonferroni(double threshold, size_t total);
-    bool apply(double p_value) override;
-
-   private:
-    double m_threshold;
-    double m_total;
-  };
-
-  class BenjaminiHochberg : public ICorrector
-  {
-  public:
-    BenjaminiHochberg(double fdr, size_t total);
-    bool apply(double p_value) override;
-
-  private:
-    double m_fdr;
-    double m_total;
-    size_t m_rank {1};
   };
 
 } // end of namespace kmdiff

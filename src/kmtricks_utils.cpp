@@ -87,9 +87,11 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     total_controls[i] = info.total;
     for (std::size_t j=1; j<ab_min; j++)
       total_controls[i] -= (j) * v[j-1];
+
+    spdlog::debug("{}: {} k-mers", fid, total_controls[i]);
   }
 
-  for (std::size_t i = nb_cases; i < nb_cases + total_cases.size(); i++)
+  for (std::size_t i = nb_controls; i < nb_controls + nb_cases; i++)
   {
     std::string fid = fof.get_id(i);
     std::string hpath = km::KmDir::get().get_hist_path(fid);
@@ -99,9 +101,11 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     auto info = hr.infos();
     auto& v = hist->get_vec();
 
-    total_cases[i - nb_cases] = info.total;
+    total_cases[i - nb_controls] = info.total;
     for (std::size_t j=1; j<ab_min; j++)
-      total_cases[i - nb_cases] -= (j) * v[j-1];
+      total_cases[i - nb_controls] -= (j) * v[j-1];
+
+    spdlog::debug("{}: {} k-mers", fid, total_cases[i - nb_controls]);
   }
 
   return std::make_tuple(std::move(total_controls), std::move(total_cases));

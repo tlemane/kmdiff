@@ -12,18 +12,19 @@ namespace kmdiff {
     using namespace indicators;
     return new indicators::ProgressBar {
       option::Start{" ["},
-      option::Fill{"="},
+      option::Fill{"■"},
       option::Lead{">"},
-      option::Remainder{" "},
+      option::Remainder{"·"},
       option::End{"]"},
       option::ForegroundColor{color},
       option::ShowPercentage{true},
       option::ShowElapsedTime{true},
-      option::ShowRemainingTime{time},
+      option::ShowRemainingTime{false},
       option::PrefixText{name},
       option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
       option::MaxProgress{size},
-      option::BarWidth{width}
+      option::BarWidth{width},
+      option::Stream{std::cerr}
     };
   }
 } // end of namespace kmdiff

@@ -28,6 +28,8 @@
 #include <mach/mach.h>
 #endif
 
+#include <unistd.h>
+
 #include <fmt/format.h>
 
 #include <kmdiff/exceptions.hpp>
@@ -64,6 +66,8 @@ namespace kmdiff {
   size_t get_peak_rss();
 
   std::string& str_to_upper(std::string& s);
+
+  inline bool isatty_stderr() { return ::isatty(STDERR_FILENO); }
 
   template<typename T>
   void check_fstream_good(const std::string& path, const T& stream)

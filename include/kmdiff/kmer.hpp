@@ -76,6 +76,11 @@ class KmerSign
 
   KmerSign() {}
 
+  std::string to_string() const
+  {
+    return m_kmer.to_string();
+  }
+
   void load(std::shared_ptr<std::istream> stream, size_t size)
   {
     m_kmer.load(*stream);
@@ -84,7 +89,7 @@ class KmerSign
     stream->read(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
     stream->read(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
 #ifdef WITH_POPSTRAT
-    size_t size_ = 0;
+    std::uint16_t size_ = 0;
     stream->read(reinterpret_cast<char*>(&size_), sizeof(size_));
     m_counts_ratio.resize(size_, 0);
     stream->read(reinterpret_cast<char*>(m_counts_ratio.data()),
@@ -100,7 +105,7 @@ class KmerSign
     stream->write(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
     stream->write(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
 #ifdef WITH_POPSTRAT
-    size_t size = m_counts_ratio.size();
+    std::uint16_t size = m_counts_ratio.size();
     stream->write(reinterpret_cast<char*>(&size), sizeof(size));
     stream->write(reinterpret_cast<char*>(m_counts_ratio.data()),
                  size*sizeof(double));
@@ -117,7 +122,6 @@ class KmerSign
   Significance m_sign{Significance::NO};
 #ifdef WITH_POPSTRAT
   std::vector<double> m_counts_ratio;
-  double m_corrected {0};
 #endif
 };
 

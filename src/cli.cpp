@@ -71,13 +71,6 @@ namespace kmdiff {
         ->def("info")
         ->checker(bc::check::f::in("debug|info|warning|error"))
         ->setter(options->verbosity);
-
-  #ifdef KMDIFF_DEV_MODE
-    cmd->add_group("dev-common", "dev common parameters");
-    cmd->add_param("-s/--signal", "Signal to raise.")
-        ->checker(bc::check::is_number)
-        ->setter(options->signal);
-  #endif
   }
 
   kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t options)
@@ -274,30 +267,43 @@ namespace kmdiff {
           ->setter(options->covariates);
     #endif
 
-    #ifdef KMDIFF_DEV_MODE
-      diff_cmd->add_group("dev", "dev parameters");
+      diff_cmd->add_group("dev", "dev parameters")->hide();
 
-      diff_cmd->add_param("--learning-rate", "Learning rate.")
+      diff_cmd->add_param("--learning-rate", "learning rate.")
           ->meta("FLOAT")
-          ->def("0.1")
+          ->def("0")
           ->checker(bc::check::f::range(0.0, 1.0))
-          ->setter(options->learning_rate);
+          ->setter(options->learning_rate)
+          ->hide();
 
-      diff_cmd->add_param("--max-iteration", "Max iteration.")
+      diff_cmd->add_param("--max-iteration", "max iteration.")
           ->meta("INT")
-          ->def("25")
+          ->def("0")
           ->checker(bc::check::is_number)
-          ->setter(options->max_iteration);
+          ->setter(options->max_iteration)
+          ->hide();
 
-      diff_cmd->add_param("--epsilon", "Epsilon.")
-          ->meta("FLOAT")
-          ->def("1e-15")
-          ->setter(options->epsilon);
+      diff_cmd->add_param("--epsilon", "epsilon.")
+          ->meta("INT")
+          ->def("0")
+          ->setter(options->epsilon)
+          ->hide();
 
-      diff_cmd->add_param("--stand", "Standardization.")
+      diff_cmd->add_param("--stand", "standardization.")
           ->as_flag()
-          ->setter(options->stand);
-    #endif
+          ->setter(options->stand)
+          ->hide();
+
+      diff_cmd->add_param("--irls", "use irls algorithm.")
+          ->as_flag()
+          ->setter(options->irls)
+          ->hide();
+
+      diff_cmd->add_param("--random-seed", "random seed for pca sampling")
+          ->meta("INT")
+          ->def("0")
+          ->setter(options->seed)
+          ->hide();
 
     add_common(diff_cmd, options);
 

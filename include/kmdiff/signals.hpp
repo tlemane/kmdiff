@@ -143,7 +143,7 @@ namespace kmdiff {
         const std::string issue =
             "If the problem persists, please open an issue with the return of '{} infos' "
             "and the content of {}";
-        msg << fmt::format(issue, PROJECT_NAME, backtrace_path);
+        msg << fmt::format(issue, KMD_PROJECT_NAME, backtrace_path);
       }
       spdlog::error(msg.str());
 

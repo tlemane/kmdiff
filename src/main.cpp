@@ -16,10 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-// ext
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
-// int
 #include <kmdiff/cli.hpp>
 #include <kmdiff/cmd.hpp>
 #include <kmdiff/config.hpp>
@@ -55,6 +54,9 @@ int main(int argc, char* argv[])
   auto [cmd, options] = cli.parse(argc, argv);
 
   set_verbosity_level(options->verbosity);
+  auto cerr_logger = spdlog::stderr_color_mt("kmdiff");
+  cerr_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+  spdlog::set_default_logger(cerr_logger);
 
   std::size_t ksize {0};
   if (cmd == COMMAND::DIFF)

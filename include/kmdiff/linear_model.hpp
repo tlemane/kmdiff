@@ -15,6 +15,8 @@ namespace kmdiff {
 using matrix_t = std::vector<std::vector<double>>;
 using vector_t = std::vector<double>;
 
+using vector_ull_t = std::vector<std::size_t>;
+
 size_t nrows(const matrix_t& m);
 size_t ncols(const matrix_t& m);
 void print_matrix(const matrix_t& m);

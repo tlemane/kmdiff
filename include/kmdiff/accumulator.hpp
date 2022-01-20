@@ -211,7 +211,6 @@ namespace kmdiff {
 
     void destroy() override
     {
-      m_out_stream->close();
       m_in_stream->close();
       fs::remove(m_path);
     }

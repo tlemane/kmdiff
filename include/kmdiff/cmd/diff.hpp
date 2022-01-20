@@ -39,6 +39,7 @@
 #include <kmdiff/cmd/diff_opt.hpp>
 #include <kmdiff/time.hpp>
 #include <kmdiff/model_manager.hpp>
+#include <kmdiff/corrector.hpp>
 
 #define KMTRICKS_PUBLIC
 #include <kmtricks/kmdir.hpp>
@@ -125,12 +126,11 @@ namespace kmdiff {
     spdlog::info("{}/{} significant k-mers.", merger.nb_sign(), total_kmers);
     spdlog::info("Before correction: {} (control), {} (case).", sign_controls, sign_cases);
 
-    #ifdef KMDIFF_DEV_MODE
-      PopStratCorrector::s_learn_rate = opt->learning_rate;
-      PopStratCorrector::s_max_iteration = opt->max_iteration;
-      PopStratCorrector::s_epsilon = opt->epsilon;
-      PopStratCorrector::s_stand = opt->stand;
-    #endif
+    if (opt->learning_rate) pop_strat_corrector::s_learn_rate = opt->learning_rate;
+    if (opt->max_iteration) pop_strat_corrector::s_max_iter = opt->max_iteration;
+    if (opt->epsilon) pop_strat_corrector::s_epsilon = opt->epsilon;
+    if (opt->stand) pop_strat_corrector::s_stand = opt->stand;
+    if (opt->irls) pop_strat_corrector::s_irls = opt->irls;
 
     if (opt->pop_correction)
     {
@@ -138,7 +138,8 @@ namespace kmdiff {
       snp->close();
     }
 
-    std::shared_ptr<PopStratCorrector> pop_corrector {nullptr};
+
+    std::vector<acc_t<KmerSign<KSIZE>>> pop_accumulators;
 
     if (opt->pop_correction)
     {
@@ -164,7 +165,10 @@ namespace kmdiff {
 
       spdlog::info("PCA done. ({}).", pca_time.formatted());
 
-      pop_corrector = std::make_shared<PopStratCorrector>(
+      Timer pop_time;
+
+      spdlog::info("Apply population stratification correction...");
+      auto pop_corrector = std::make_shared<pop_strat_corrector>(
         opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->npc);
 
       pop_corrector->load_Z(pcs_evec);
@@ -172,44 +176,78 @@ namespace kmdiff {
       pop_corrector->load_C(opt->covariates);
       pop_corrector->load_ginfo(gwas_info_path);
       pop_corrector->init_global_features();
+
+      pop_accumulators.resize(accumulators.size());
+
+      for (std::size_t p = 0; p < accumulators.size(); p++)
+      {
+        pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+          fmt::format("{}/accp_{}", output_part_dir, p), config.kmer_size);
+      }
+
+      pop_corrector->apply(accumulators, pop_accumulators, 1);
+
+      accumulators.swap(pop_accumulators);
+
+      spdlog::info("Population correction done. ({}).", pop_time.formatted());
     }
 
     Timer agg_time;
 
     std::shared_ptr<ICorrector> corrector {nullptr};
-    std::unique_ptr<IAggregator<KSIZE>> aggregator {nullptr};
+    std::unique_ptr<IAggregator2<KSIZE>> agg {nullptr};
 
     if (opt->correction == CorrectionType::NOTHING)
       spdlog::info("Aggregate partitions...");
     else
-      spdlog::info("Aggregate partitions and apply correction...");
+      spdlog::info("Aggregate partitions and apply significance correction...");
 
     indicators::ProgressBar* pb = nullptr;
 
-    if (spdlog::get_level() != spdlog::level::debug)
+    if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
     {
-      pb = get_progress_bar("aggregate", config.nb_partitions, 50, indicators::Color::white, true);
+      pb = get_progress_bar("progress", config.nb_partitions, 50, indicators::Color::white, true);
       pb->print_progress();
     }
 
-    if (opt->correction == CorrectionType::BONFERRONI)
+    if (opt->correction != CorrectionType::BENJAMINI)
     {
-      corrector = std::make_shared<Bonferroni>(opt->threshold, total_kmers);
-      aggregator = std::make_unique<BonferonniAggregator<KSIZE>>(accumulators, corrector, opt, config, pb);
+      if (opt->correction == CorrectionType::BONFERRONI)
+      {
+        corrector = std::make_shared<bonferroni>(opt->threshold, total_kmers);
+      }
+      else
+      {
+        corrector = std::make_shared<basic_threshold>(opt->threshold);
+      }
+      agg = std::make_unique<aggregator<KSIZE>>(accumulators,
+                                                corrector,
+                                                config,
+                                                opt->output_directory,
+                                                opt->kff,
+                                                opt->nb_threads,
+                                                pb);
+
+      //aggregator = std::make_unique<BonferonniAggregator<KSIZE>>(accumulators, corrector, opt, config, pb);
     }
     else if (opt->correction == CorrectionType::BENJAMINI)
     {
-      corrector = std::make_shared<BenjaminiHochberg>(opt->threshold, total_kmers);
-      aggregator = std::make_unique<BenjaminiAggregator<KSIZE>>(accumulators, corrector, opt, config, pb);
-    }
-    else
-    {
-      aggregator = make_uncorrected_aggregator<KSIZE>(accumulators, opt, config, nullptr, pb);
+      corrector = std::make_shared<benjamini>(opt->threshold, total_kmers);
+      agg = std::make_unique<sorted_aggregator<KSIZE>>(accumulators,
+                                                       corrector,
+                                                       config,
+                                                       opt->output_directory,
+                                                       opt->kff,
+                                                       opt->nb_threads,
+                                                       pb);
+
+
+     // aggregator = std::make_unique<BenjaminiAggregator<KSIZE>>(accumulators, corrector, opt, config, pb);
     }
 
-    aggregator->run();
+    agg->run();
 
-    auto [c_controls, c_cases] = aggregator->counts();
+    auto [c_controls, c_cases] = agg->counts();
 
     delete pb;
     spdlog::info("Partitions aggregated ({})", agg_time.formatted());

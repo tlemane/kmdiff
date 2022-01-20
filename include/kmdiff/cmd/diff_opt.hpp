@@ -25,12 +25,13 @@ namespace kmdiff {
     size_t npc;
     std::string covariates;
 
-  #ifdef KMDIFF_DEV_MODE
     double learning_rate;
     size_t max_iteration;
     double epsilon;
     bool stand {false};
-  #endif
+    bool irls {false};
+
+    std::size_t seed;
 
     std::string display()
     {
@@ -53,13 +54,11 @@ namespace kmdiff {
       KRECORD(ss, npc);
       KRECORD(ss, covariates);
   #endif
-  #ifdef KMDIFF_DEV_MODE
-      KRECORD(ss, learning_rate);
-      KRECORD(ss, max_iteration);
-      KRECORD(ss, epsilon);
-      KRECORD(ss, stand)
-  #endif
-      return ss.str();
+    KRECORD(ss, learning_rate);
+    KRECORD(ss, max_iteration);
+    KRECORD(ss, epsilon);
+    KRECORD(ss, stand);
+    return ss.str();
     }
   };
 
