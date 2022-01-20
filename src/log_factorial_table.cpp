@@ -6,11 +6,11 @@ namespace kmdiff {
     : m_size(size)
   {
     m_table.reserve(m_size);
-    for (int i=0; i<size; i++)
+    for (size_t i=0; i<size; i++)
       m_table.push_back(log_factorial(i));
   }
 
-  double LogFactorialTable::log_factorial(int k)
+  double LogFactorialTable::log_factorial(size_t k)
   {
     double res = 0;
     while (k > 1)
@@ -22,3 +22,4 @@ namespace kmdiff {
   }
 
 } // end of namespace kmdiff
+

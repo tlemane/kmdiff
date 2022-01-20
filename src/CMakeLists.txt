@@ -14,7 +14,7 @@ endforeach()
 add_format_project_target("${PROJECT_FILES}")
 
 add_library(${PROJECT_NAME}lib ${CPP_FILES})
-target_link_libraries(${PROJECT_NAME}lib PUBLIC build_type_flags headers links deps)
+target_link_libraries(${PROJECT_NAME}lib PUBLIC warning_flags build_type_flags headers links deps)
 
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}lib)
@@ -23,9 +23,11 @@ if(WITH_POPSTRAT)
   add_compile_definitions(WITH_POPSTRAT)
 endif()
 
+if(WITH_PLUGIN)
+  add_compile_definitions(WITH_PLUGIN)
+endif()
+
 if (NOT APPLE)
   target_link_options(${PROJECT_NAME} PUBLIC -export-dynamic)
 endif()
-if (STATIC_BUILD)
-  target_link_options(${PROJECT_NAME} PUBLIC -static)
-endif()
+

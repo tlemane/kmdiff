@@ -338,5 +338,5 @@ namespace kmdiff {
       spinlock m_lock{};
   };
 
-}; // end of namespace kmdiff
+} // end of namespace kmdiff
 

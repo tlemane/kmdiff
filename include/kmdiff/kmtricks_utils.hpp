@@ -40,20 +40,21 @@ namespace fs = std::filesystem;
 
 namespace kmdiff
 {
-struct kmtricks_config
-{
-  size_t kmer_size{0};
-  size_t nb_partitions{0};
-  size_t abundance_min{0};
-};
 
-using kmtricks_config_t = struct kmtricks_config;
+  struct kmtricks_config
+  {
+    size_t kmer_size{0};
+    size_t nb_partitions{0};
+    size_t abundance_min{0};
+  };
 
-kmtricks_config_t get_kmtricks_config(const std::string& run_dir);
+  using kmtricks_config_t = struct kmtricks_config;
 
-km::Fof get_fofs(const std::string& run_dir);
+  kmtricks_config_t get_kmtricks_config(const std::string& run_dir);
 
-std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
-    const std::string& run_dir, size_t nb_controls, size_t nb_cases, size_t ab_min);
+  km::Fof get_fofs(const std::string& run_dir);
 
-};  // namespace kmdiff
+  std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
+      const std::string& run_dir, size_t nb_controls, size_t nb_cases, size_t ab_min);
+
+} // end of namespace kmdiff

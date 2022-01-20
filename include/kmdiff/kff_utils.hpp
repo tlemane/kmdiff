@@ -171,3 +171,4 @@ namespace kmdiff {
   using kff_r_t = std::unique_ptr<KffReader>;
 
 } // end of namespace kmdiff
+

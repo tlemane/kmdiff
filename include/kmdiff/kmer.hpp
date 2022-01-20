@@ -28,110 +28,109 @@
 
 #include <kmtricks/kmer.hpp>
 
-namespace kmdiff
-{
+namespace kmdiff {
 
-enum class Significance
-{
-  CONTROL,
-  CASE,
-  NO
-};
-
-inline char significance_to_char(Significance sign)
-{
-  switch (sign)
+  enum class Significance
   {
-    case Significance::CONTROL:
-      return '-';
-    case Significance::CASE:
-      return '+';
-    case Significance::NO:
-      return '$';
-    default:
-      return '?';
-  }
-}
+    CONTROL,
+    CASE,
+    NO
+  };
 
-template <size_t MAX_K>
-class KmerSign
-{
-  friend struct std::hash<KmerSign<MAX_K>>;
- public:
-#ifdef WITH_POPSTRAT
-  KmerSign(km::Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
-           std::vector<double>& counts_ratio, double mean_control = 0, double mean_case = 0)
-      : m_kmer(std::move(kmer)), m_pvalue(pvalue), m_sign(sign), m_counts_ratio(counts_ratio),
-        m_mean_control(mean_control), m_mean_case(mean_case)
+  inline char significance_to_char(Significance sign)
   {
-  }
-#else
-  KmerSign(km::Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
-           double mean_control = 0, double mean_case = 0)
-      : m_kmer(std::move(kmer)), m_pvalue(pvalue), m_sign(sign),
-        m_mean_control(mean_control), m_mean_case(mean_case)
-  {
-  }
-#endif
-
-  KmerSign() {}
-
-  std::string to_string() const
-  {
-    return m_kmer.to_string();
+    switch (sign)
+    {
+      case Significance::CONTROL:
+        return '-';
+      case Significance::CASE:
+        return '+';
+      case Significance::NO:
+        return '$';
+      default:
+        return '?';
+    }
   }
 
-  void load(std::shared_ptr<std::istream> stream, size_t size)
+  template <size_t MAX_K>
+  class KmerSign
   {
-    m_kmer.load(*stream);
-    stream->read(reinterpret_cast<char*>(&m_pvalue), sizeof(m_pvalue));
-    stream->read(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
-    stream->read(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
-    stream->read(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
-#ifdef WITH_POPSTRAT
-    std::uint16_t size_ = 0;
-    stream->read(reinterpret_cast<char*>(&size_), sizeof(size_));
-    m_counts_ratio.resize(size_, 0);
-    stream->read(reinterpret_cast<char*>(m_counts_ratio.data()),
-                 size_*sizeof(double));
-#endif
+    friend struct std::hash<KmerSign<MAX_K>>;
+   public:
+  #ifdef WITH_POPSTRAT
+    KmerSign(km::Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
+             std::vector<double>& counts_ratio, double mean_control = 0, double mean_case = 0)
+        : m_kmer(std::move(kmer)), m_pvalue(pvalue), m_sign(sign), m_counts_ratio(counts_ratio),
+          m_mean_control(mean_control), m_mean_case(mean_case)
+    {
+    }
+  #else
+    KmerSign(km::Kmer<MAX_K>&& kmer, double pvalue, Significance sign,
+             double mean_control = 0, double mean_case = 0)
+        : m_kmer(std::move(kmer)), m_pvalue(pvalue), m_sign(sign),
+          m_mean_control(mean_control), m_mean_case(mean_case)
+    {
+    }
+  #endif
+
+    KmerSign() {}
+
+    std::string to_string() const
+    {
+      return m_kmer.to_string();
+    }
+
+    void load(std::shared_ptr<std::istream> stream, size_t size)
+    {
+      m_kmer.load(*stream);
+      stream->read(reinterpret_cast<char*>(&m_pvalue), sizeof(m_pvalue));
+      stream->read(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
+      stream->read(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
+      stream->read(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
+  #ifdef WITH_POPSTRAT
+      std::uint16_t size_ = 0;
+      stream->read(reinterpret_cast<char*>(&size_), sizeof(size_));
+      m_counts_ratio.resize(size_, 0);
+      stream->read(reinterpret_cast<char*>(m_counts_ratio.data()),
+                   size_*sizeof(double));
+  #endif
+    }
+
+    void dump(std::shared_ptr<std::ostream> stream)
+    {
+      m_kmer.dump(*stream);
+      stream->write(reinterpret_cast<char*>(&m_pvalue), sizeof(m_pvalue));
+      stream->write(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
+      stream->write(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
+      stream->write(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
+  #ifdef WITH_POPSTRAT
+      std::uint16_t size = m_counts_ratio.size();
+      stream->write(reinterpret_cast<char*>(&size), sizeof(size));
+      stream->write(reinterpret_cast<char*>(m_counts_ratio.data()),
+                   size*sizeof(double));
+  #endif
+    }
+
+    bool operator==(const KmerSign<MAX_K>& rhs) const { return m_kmer == rhs.m_kmer; }
+
+   public:
+    km::Kmer<MAX_K> m_kmer;
+    double m_pvalue{0};
+    Significance m_sign{Significance::NO};
+  #ifdef WITH_POPSTRAT
+    std::vector<double> m_counts_ratio;
+  #endif
+    double m_mean_control;
+    double m_mean_case;
+  };
+
+  template<size_t MAX_K>
+  inline bool operator<(const KmerSign<MAX_K>& lhs, const KmerSign<MAX_K>& rhs)
+  {
+    return lhs.m_pvalue > rhs.m_pvalue;
   }
 
-  void dump(std::shared_ptr<std::ostream> stream)
-  {
-    m_kmer.dump(*stream);
-    stream->write(reinterpret_cast<char*>(&m_pvalue), sizeof(m_pvalue));
-    stream->write(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
-    stream->write(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
-    stream->write(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
-#ifdef WITH_POPSTRAT
-    std::uint16_t size = m_counts_ratio.size();
-    stream->write(reinterpret_cast<char*>(&size), sizeof(size));
-    stream->write(reinterpret_cast<char*>(m_counts_ratio.data()),
-                 size*sizeof(double));
-#endif
-  }
-
-  bool operator==(const KmerSign<MAX_K>& rhs) const { return m_kmer == rhs.m_kmer; }
-
- public:
-  km::Kmer<MAX_K> m_kmer;
-  double m_pvalue{0};
-  double m_mean_control;
-  double m_mean_case;
-  Significance m_sign{Significance::NO};
-#ifdef WITH_POPSTRAT
-  std::vector<double> m_counts_ratio;
-#endif
-};
-
-template<size_t MAX_K>
-inline bool operator<(const KmerSign<MAX_K>& lhs, const KmerSign<MAX_K>& rhs)
-{
-  return lhs.m_pvalue > rhs.m_pvalue;
-}
-
-};  // namespace kmdiff
+} // end of namespace kmdiff
 
 template <size_t MAX_K>
 struct std::hash<km::Kmer<MAX_K>>

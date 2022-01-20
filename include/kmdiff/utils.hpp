@@ -38,6 +38,9 @@ namespace fs = std::filesystem;
 
 namespace kmdiff {
 
+  template<typename... Args>
+  void unused(Args&&...) {}
+
   enum class VerbosityLevel
   {
     DEBUG,
@@ -170,4 +173,5 @@ namespace kmdiff {
   template<typename T, typename U>
   constexpr auto is_same_template_v = is_same_template<T, U>::value;
 
-};  // end of namespace kmdiff
+} // end of namespace kmdiff
+

@@ -219,10 +219,11 @@ namespace kmdiff {
     T m_tmp;
     size_t m_size{0};
     size_t m_read{0};
-    size_t m_kmer_size{0};
     std::string m_path;
+    size_t m_kmer_size{0};
     std::shared_ptr<out_stream_t> m_out_stream{nullptr};
     std::shared_ptr<in_stream_t> m_in_stream{nullptr};
   };
 
-};  // end of namespace kmdiff
+}  // end of namespace kmdiff
+

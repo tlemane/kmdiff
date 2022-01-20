@@ -315,4 +315,4 @@ namespace kmdiff {
     bc::cmd_t info_cmd = cli->add_command("infos", "Show build infos.");
   }
 
-};  // namespace kmdiff
+} // end of namespace kmdiff

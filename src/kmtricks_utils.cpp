@@ -111,4 +111,4 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
   return std::make_tuple(std::move(total_controls), std::move(total_cases));
 }
 
-};  // namespace kmdiff
+} // end of namespace kmdiff

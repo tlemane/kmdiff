@@ -38,8 +38,11 @@
 #include <kmdiff/merge.hpp>
 #include <kmdiff/cmd/diff_opt.hpp>
 #include <kmdiff/time.hpp>
-#include <kmdiff/model_manager.hpp>
 #include <kmdiff/corrector.hpp>
+
+#ifdef WITH_PLUGIN
+  #include <kmdiff/model_manager.hpp>
+#endif
 
 #define KMTRICKS_PUBLIC
 #include <kmtricks/kmdir.hpp>
@@ -52,8 +55,10 @@ namespace kmdiff {
     diff_options_t opt = std::static_pointer_cast<struct diff_options>(options);
     spdlog::debug(opt->display());
 
-    if (!opt->model_lib_path.empty())
-      plugin_manager<IModel<DMAX_C>>::get().init(opt->model_lib_path, opt->model_config);
+    #ifdef WITH_PLUGIN
+      if (!opt->model_lib_path.empty())
+        plugin_manager<IModel<DMAX_C>>::get().init(opt->model_lib_path, opt->model_config);
+    #endif
 
     Timer whole_time;
     kmtricks_config_t config = get_kmtricks_config(opt->kmtricks_dir);
@@ -94,8 +99,10 @@ namespace kmdiff {
     if (opt->model_lib_path.empty())
       model = std::make_shared<PoissonLikelihood<DMAX_C>>(
         opt->nb_controls, opt->nb_cases, total_controls, total_cases, 500);
-    else
-      model = plugin_manager<IModel<DMAX_C>>::get().get_plugin();
+    #ifdef WITH_PLUGIN
+      else
+        model = plugin_manager<IModel<DMAX_C>>::get().get_plugin();
+    #endif
 
     std::string pop_dir = fmt::format("{}/popstrat", opt->output_directory);
     fs::create_directory(pop_dir);
@@ -206,7 +213,7 @@ namespace kmdiff {
 
     if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
     {
-      pb = get_progress_bar("progress", config.nb_partitions, 50, indicators::Color::white, true);
+      pb = get_progress_bar("progress", config.nb_partitions, 50, indicators::Color::white, false);
       pb->print_progress();
     }
 

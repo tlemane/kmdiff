@@ -25,7 +25,7 @@ namespace kmdiff {
     std::string case_ind = fmt::format("{}/case.ind", parent);
     std::ofstream caind(case_ind, std::ios::out); check_fstream_good(control_ind, coind);
 
-    int i = 0;
+    std::size_t i = 0;
     for (auto& [id, paths, min] : fof)
     {
       if (i < nb_controls)
@@ -272,7 +272,7 @@ namespace kmdiff {
 
     #ifdef KMD_USE_IRLS
       auto [model, singular, nan, error, iter] = glm_irls(
-        m_null_global_features, m_Y, s_learn_rate, s_max_iter);
+        m_null_global_features, m_Y, s_max_iter);
     #else
       auto [model, singular, nan, error, iter] = glm_newton_raphson(
         m_null_global_features, m_Y, s_learn_rate, s_max_iter);
@@ -326,4 +326,5 @@ namespace kmdiff {
     }
   }
 
-}; // end of namespace kmdiff
+} // end of namespace kmdiff
+

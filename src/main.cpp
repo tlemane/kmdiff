@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
   using namespace kmdiff;
 
   SignalHandler::get().init();
-  kmdiffCli cli(KMD_PROJECT_NAME, KMD_PROJECT_DESC, KMD_PROJECT_VER, AUTHOR);
+  kmdiffCli cli(KMD_PROJECT_NAME, KMD_PROJECT_DESC, KMD_PROJECT_VER, "");
 
   auto [cmd, options] = cli.parse(argc, argv);
 

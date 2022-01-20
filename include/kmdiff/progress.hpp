@@ -19,7 +19,7 @@ namespace kmdiff {
       option::ForegroundColor{color},
       option::ShowPercentage{true},
       option::ShowElapsedTime{true},
-      option::ShowRemainingTime{false},
+      option::ShowRemainingTime{time},
       option::PrefixText{name},
       option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
       option::MaxProgress{size},

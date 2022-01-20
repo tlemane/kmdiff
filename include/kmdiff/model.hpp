@@ -145,10 +145,6 @@ namespace kmdiff {
       auto [mean_control, positive_controls] = this->compute_sum_e(controls);
       auto [mean_case, positive_cases] = this->compute_sum_e(cases);
 
-      size_t positive_counts = positive_controls + positive_cases;
-
-      double positive_ratio = positive_counts / static_cast<double>(m_nb_controls + m_nb_cases);
-
       double mean = (mean_control + mean_case) / static_cast<double>(m_sum_controls + m_sum_cases);
 
       double null_hypothesis = 0;

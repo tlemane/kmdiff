@@ -11,14 +11,14 @@ namespace kmdiff {
   public:
     LogFactorialTable(size_t size);
 
-    double operator[](int i)
+    double operator[](size_t i)
     {
       if (i < m_size) return m_table[i];
       return log_factorial(i);
     }
 
   private:
-    double log_factorial(int k);
+    double log_factorial(size_t k);
 
   private:
     std::vector<double> m_table;

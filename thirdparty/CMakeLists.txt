@@ -17,7 +17,7 @@ ExternalProject_Add(
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/fmt
   INSTALL_COMMAND ""
 )
-target_include_directories(headers INTERFACE ${THIRD_DIR}/fmt/include)
+target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/fmt/include)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/FMT/src/FMT-build)
 target_link_libraries(links INTERFACE fmt)
 add_dependencies(deps FMT)
@@ -26,10 +26,10 @@ ExternalProject_Add(
   KMTRICKS
   PREFIX KMTRICKS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
-  CMAKE_ARGS -DKMER_LIST=32 -DMAX_C=${MAX_C}
+  CMAKE_ARGS -DKMER_LIST=32 -DMAX_C=${MAX_C} -DSTATIC=${STATIC}
   INSTALL_COMMAND ""
 )
-target_include_directories(headers INTERFACE
+target_include_directories(headers SYSTEM INTERFACE
   ${THIRD_DIR}/kmtricks/include
   ${THIRD_DIR}/kmtricks/thirdparty/TurboPFor-Integer-Compression
   ${THIRD_BINDIR}/KMTRICKS/src/KMTRICKS-build/include
@@ -46,7 +46,7 @@ ExternalProject_Add(
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/spdlog
   INSTALL_COMMAND ""
 )
-target_include_directories(headers INTERFACE ${THIRD_DIR}/spdlog/include)
+target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/spdlog/include)
 add_dependencies(deps SPDLOG)
 
 ExternalProject_Add(
@@ -92,7 +92,7 @@ ExternalProject_Add(
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kff-cpp-api
   INSTALL_COMMAND ""
 )
-target_include_directories(headers INTERFACE ${THIRD_BINDIR}/KFF/src/KFF-build)
+target_include_directories(headers SYSTEM INTERFACE ${THIRD_BINDIR}/KFF/src/KFF-build)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/KFF/src/KFF-build)
 target_link_libraries(links INTERFACE kff)
 add_dependencies(deps KFF)
@@ -120,22 +120,11 @@ target_link_libraries(links INTERFACE wgsim)
 add_dependencies(deps WGSIM)
 
 
-ExternalProject_Add(
-  HTSLIB
-  PREFIX HTSLIB
-  URL https://github.com/samtools/htslib/releases/download/1.12/htslib-1.12.tar.bz2
-  BUILD_IN_SOURCE 1
-  BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/libhts.a
-  CONFIGURE_COMMAND ${PROJECT_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/configure --disable-libcurl --disable-bz2 --disable-lzma
-  BUILD_COMMAND make -j4
-  INSTALL_COMMAND ""
-)
-target_include_directories(headers INTERFACE ${THIRD_DIR}/htslib)
-
 if (WITH_POPSTRAT)
-        ExternalProject_Add(HAWK
-                PREFIX HAWK
-                SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/hawk
-                INSTALL_COMMAND "")
+  ExternalProject_Add(HAWK
+    PREFIX HAWK
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/hawk
+    INSTALL_COMMAND ""
+  )
 endif()
 

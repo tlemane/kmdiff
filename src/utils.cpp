@@ -65,7 +65,7 @@ namespace kmdiff {
     {
       if (fgets(buffer.data(), 256, pipe) != nullptr) result += buffer.data();
     }
-    auto rc = pclose(pipe);
+    auto rc = pclose(pipe); unused(rc);
 
     return result;
   }
@@ -160,7 +160,7 @@ namespace kmdiff {
       }
       fcntl(p[0], F_SETFL, fcntl(p[0], F_GETFL) | O_NONBLOCK);
       bool failed = false;
-      ssize_t r = read(p[0], &failed, sizeof(failed));
+      ssize_t r = read(p[0], &failed, sizeof(failed)); unused(r);
 
       if (WIFEXITED(status))
         if (WEXITSTATUS(status) != 0)

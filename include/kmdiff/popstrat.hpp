@@ -184,7 +184,7 @@ namespace kmdiff {
 
         if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
         {
-          pb = get_progress_bar("progress", size, 50, indicators::Color::white, true);
+          pb = get_progress_bar("progress", size, 50, indicators::Color::white, false);
           pb->print_progress();
         }
 
@@ -237,7 +237,7 @@ namespace kmdiff {
 
         #ifdef KMD_USE_IRLS
           auto [model, singular, nan, error, iter] = glm_newton_irls(
-            local_features, m_Y, s_learn_rate, s_max_iter);
+            local_features, m_Y, s_max_iter);
         #else
           auto [model, singular, nan, error, iter] = glm_newton_raphson(
             local_features, m_Y, s_learn_rate, s_max_iter);
@@ -326,8 +326,6 @@ namespace kmdiff {
 
       std::size_t m_cov_count {0};
 
-      std::size_t m_npc {0};
-
       vector_t m_null_model;
 
       vector_ull_t m_totals;
@@ -343,8 +341,11 @@ namespace kmdiff {
       std::vector<int> m_ginfo;
 
       std::size_t m_unkg {m_size};
+
+      std::size_t m_npc {0};
   };
 
-using pop_strat_corrector_t = std::shared_ptr<pop_strat_corrector>;
+  using pop_strat_corrector_t = std::shared_ptr<pop_strat_corrector>;
 
-}; // end of namespace kmdif
+} // end of namespace kmdif
+

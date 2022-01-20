@@ -22,4 +22,5 @@ namespace kmdiff {
     }
   }
 
-}
+} // end of namespace kmdiff
+
