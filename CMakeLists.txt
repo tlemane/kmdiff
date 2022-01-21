@@ -3,7 +3,7 @@ project(kmdiff VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-option(DEV_MODE "Dev mode" OFF)
+option(WITH_KMTRICKS "Build kmtricks" ON)
 option(WITH_TESTS "Compile tests" OFF)
 option(MAKE_PACKAGE "Build package" OFF)
 option(CONDA_BUILD "Build inside conda env" OFF)
@@ -70,9 +70,6 @@ string(REPLACE " " "," KMER_LIST ${KMER_LIST})
 list(LENGTH KMER_LIST_ KMER_N)
 
 add_compile_definitions(DMAX_C=${MAX_C})
-if (DEV_MODE)
-  add_compile_definitions(KMDIFF_DEV_MODE)
-endif()
 
 if (WITH_POPSIM)
   add_compile_definitions(WITH_POPSIM)
