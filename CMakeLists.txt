@@ -5,13 +5,13 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 option(DEV_MODE "Dev mode" OFF)
 option(WITH_TESTS "Compile tests" OFF)
-option(BUILD_KMTRICKS_FULL "Build kmtricks binaries" OFF)
 option(MAKE_PACKAGE "Build package" OFF)
 option(CONDA_BUILD "Build inside conda env" OFF)
-option(STATIC "Static build (requires static zlib)" OFF)
-option(WITH_POPSIM "Build kmdiff popsim" OFF)
+option(STATIC "Static build" OFF)
 option(WITH_POPSTRAT "Build with population stratification support" ON)
 option(WITH_PLUGIN "Build plugins" OFF)
+
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
 
 if (WITH_POPSTRAT)
   include(Depends)
@@ -19,10 +19,6 @@ endif()
 
 if (STATIC AND NOT APPLE)
   set(CMAKE_EXE_LINKER_FLAGS "-static")
-endif()
-
-if (NOT MAX_K)
-  set(MAX_K 32)
 endif()
 
 if (NOT MAX_C)
@@ -35,13 +31,7 @@ endif()
 
 message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
-set(IS_CONDA_BUILD No)
-if (CONDA_BUILD)
-  set(IS_CONDA_BUILD Yes)
-endif()
-
 set(PROJECT_DESCRIPTION "kmdiff - Differential k-mers analysis.")
-set(CONTACT "teo.lemane@inria.fr")
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -57,8 +47,8 @@ add_library(warning_flags INTERFACE)
 target_compile_options(warning_flags INTERFACE
   "-Wall"
   "-Wextra"
-  "-Werror"
-  "-pedantic"
+  "-Wno-char-subscripts"
+  "-Wno-unused-parameter"
 )
 
 add_library(headers INTERFACE)
@@ -77,12 +67,6 @@ endif()
 string(REPLACE " " ";" KMER_LIST_ ${KMER_LIST})
 string(REPLACE " " "," KMER_LIST ${KMER_LIST})
 list(LENGTH KMER_LIST_ KMER_N)
-
-if (NOT MAX_C)
-  set (MAX_C 65536)
-endif()
-
-set(DEF_MAX_COUNT 65536)
 
 add_compile_definitions(DMAX_C=${MAX_C})
 if (DEV_MODE)
@@ -115,9 +99,6 @@ get_sha1(${THIRDPARTY_DIR}/zlib ZLIB_SHA1)
 configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINARY_DIR}/include/kmdiff/config.hpp)
 
 set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
-
-set(HTS_LINK "${CMAKE_BINARY_DIR}/thirdparty/HTSLIB/src/HTSLIB/libhts.a")
-target_link_libraries(links INTERFACE ${HTS_LINK})
 
 add_subdirectory(include)
 add_subdirectory(src)
