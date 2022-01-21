@@ -11,7 +11,7 @@ option(STATIC "Static build" OFF)
 option(WITH_POPSTRAT "Build with population stratification support" ON)
 option(WITH_PLUGIN "Build plugins" OFF)
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
 
 if (WITH_POPSTRAT)
   include(Depends)
