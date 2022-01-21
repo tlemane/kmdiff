@@ -11,10 +11,11 @@ option(STATIC "Static build" OFF)
 option(WITH_POPSTRAT "Build with population stratification support" ON)
 option(WITH_PLUGIN "Build plugins" OFF)
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
+#set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
 
 if (WITH_POPSTRAT)
   include(Depends)
+  find_dependencies()
 endif()
 
 if (STATIC AND NOT APPLE)
@@ -93,8 +94,7 @@ get_sha1(${THIRDPARTY_DIR}/lz4 LZ4_SHA1)
 get_sha1(${THIRDPARTY_DIR}/robin-hood-hashing ROBIN_SHA1)
 get_sha1(${THIRDPARTY_DIR}/spdlog SPDLOG_SHA1)
 get_sha1(${THIRDPARTY_DIR}/xxHash XXHASH_SHA1)
-get_sha1(${THIRDPARTY_DIR}/wgsim WGSIM_SHA1)
-get_sha1(${THIRDPARTY_DIR}/zlib ZLIB_SHA1)
+get_sha1(${THIRDPARTY_DIR}/indicators INDICATORS_SHA1)
 
 configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINARY_DIR}/include/kmdiff/config.hpp)
 

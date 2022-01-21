@@ -2,16 +2,15 @@ cmake_minimum_required(VERSION 3.13.0)
 project(hawk LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-find_package(BLAS REQUIRED)
-find_package(GSL REQUIRED)
-find_package(LAPACK REQUIRED)
-find_package(LAPACKE REQUIRED)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+include(Depends)
+find_dependencies()
 
 add_library(build_type_flags INTERFACE)
 target_compile_options(build_type_flags INTERFACE
@@ -28,8 +27,6 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/EIG6.0.1-Hawk/src")
 set(SRCN "${SRC_DIR}/${NICK}")
 set(SRCE "${SRC_DIR}/${EIGN}")
 set(SRCK "${SRC_DIR}/${KD}")
-
-set(CMAKE_EXE_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
 
 set(SRC_FILES
     ${SRCE}/smartpca.c
@@ -59,13 +56,12 @@ ExternalProject_Add(EIGNICK
 )
 
 add_executable(smartpca ${SRC_FILES})
-target_include_directories(smartpca PRIVATE ${SRC_DIR}/../include)
+target_include_directories(smartpca PRIVATE ${SRC_DIR}/../include ${BLAS_INCLUDE_DIRS})
 target_link_directories(smartpca PRIVATE ${SRCN})
 target_link_libraries(smartpca
   nick
   GSL::gsl
   ${BLAS_LIBRARIES}
-  ${LAPACK_LIBRARIES}
   ${LAPACKE_LIBRARIES}
   m
   pthread
