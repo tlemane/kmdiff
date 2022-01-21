@@ -16,6 +16,8 @@ ExternalProject_Add(
   PREFIX FMT
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/fmt
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/fmt/include)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/FMT/src/FMT-build)
@@ -28,6 +30,9 @@ ExternalProject_Add(
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
   CMAKE_ARGS -DKMER_LIST=32 -DMAX_C=${MAX_C} -DSTATIC=${STATIC}
   INSTALL_COMMAND ""
+  BUILD_COMMAND $<$<BOOL:${WITH_KMTRICKS}>:make>
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers SYSTEM INTERFACE
   ${THIRD_DIR}/kmtricks/include
@@ -35,16 +40,22 @@ target_include_directories(headers SYSTEM INTERFACE
   ${THIRD_BINDIR}/KMTRICKS/src/KMTRICKS-build/include
 )
 
-ExternalProject_Add(GOOGLE_TEST
-        PREFIX GOOGLE_TEST
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/googletest
-        INSTALL_COMMAND "")
+ExternalProject_Add(
+  GOOGLE_TEST
+  PREFIX GOOGLE_TEST
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/googletest
+  INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
+)
 
 ExternalProject_Add(
   SPDLOG
   PREFIX SPDLOG
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/spdlog
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/spdlog/include)
 add_dependencies(deps SPDLOG)
@@ -56,6 +67,8 @@ ExternalProject_Add(
   SOURCE_SUBDIR "cmake_unofficial"
   CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DXXHASH_BUILD_XXHSUM=0FF
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers INTERFACE ${THIRD_DIR}/xxHash)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/XXHASH/src/XXHASH-build)
@@ -69,6 +82,8 @@ ExternalProject_Add(
   SOURCE_SUBDIR build/cmake
   CMAKE_ARGS -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers INTERFACE ${THIRD_DIR}/lz4/lib)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/LZ4/src/LZ4-build)
@@ -80,6 +95,8 @@ ExternalProject_Add(
   PREFIX ALGLIB
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/alglib
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers INTERFACE ${THIRD_DIR}/alglib/src)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/ALGLIB/src/ALGLIB-build)
@@ -91,6 +108,8 @@ ExternalProject_Add(
   PREFIX KFF
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kff-cpp-api
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers SYSTEM INTERFACE ${THIRD_BINDIR}/KFF/src/KFF-build)
 target_link_directories(links INTERFACE ${THIRD_BINDIR}/KFF/src/KFF-build)
@@ -102,29 +121,21 @@ ExternalProject_Add(
   PREFIX KSEQPP
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kseqpp
   INSTALL_COMMAND ""
+  LOG_CONFIGURE ON
+  LOG_BUILD ON
 )
 target_include_directories(headers INTERFACE ${THIRD_DIR}/kseqpp/include ${THIRD_DIR}/kseqpp/include/kseq++)
 add_dependencies(deps KSEQPP)
 
 target_include_directories(headers INTERFACE ${THIRD_DIR}/indicators/include)
 
-ExternalProject_Add(
-  WGSIM
-  PREFIX WGSIM
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/wgsim
-  INSTALL_COMMAND ""
-)
-target_include_directories(headers INTERFACE ${THIRD_DIR}/wgsim)
-target_link_directories(links INTERFACE ${THIRD_BINDIR}/WGSIM/src/WGSIM-build)
-target_link_libraries(links INTERFACE wgsim)
-add_dependencies(deps WGSIM)
-
-
 if (WITH_POPSTRAT)
   ExternalProject_Add(HAWK
     PREFIX HAWK
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/hawk
     INSTALL_COMMAND ""
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
   )
 endif()
 

@@ -1,8 +1,10 @@
-#include <iomanip>
-#include <kmdiff/linear_model.hpp>
 #define _USE_MATH_DEFINES
+#include <iomanip>
 #include <cmath>
 #include <iostream>
+
+#include <kmdiff/utils.hpp>
+#include <kmdiff/linear_model.hpp>
 
 namespace kmdiff {
 
@@ -117,7 +119,7 @@ namespace kmdiff {
         else
         {
           double sum = 0;
-          for (int j=0; j<i; j++)
+          for (size_t j=0; j<i; j++)
           {
             sum += (lower[k][j] * upper[j][i]);
           }
@@ -162,7 +164,7 @@ namespace kmdiff {
       for (int row = n-2; row>-1; row--)
       {
         double sum = 0;
-        for (int col = row+1; col<n; col++)
+        for (size_t col = row+1; col<n; col++)
         {
           sum += upper[row][col] * x[col];
         }
@@ -215,9 +217,8 @@ namespace kmdiff {
   {
     bool ise = false, ine = false;
     double re = 0.0;
-    int ein = 0;
+    int ein = 0; unused(ein);
     double epsilon = 1e-6;
-    double error = 0.0;
     int iter = 0;
     matrix_t A = x;
     vector_t weight_old(ncols(A), 0);

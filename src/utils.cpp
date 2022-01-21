@@ -114,7 +114,7 @@ namespace kmdiff {
     int status;
     const char* cmd_name[] = {cmd.c_str()};
     const char** argv = new const char*[argsv.size() + 2];
-    for (int i = 1; i < argsv.size() + 1; i++)
+    for (size_t i = 1; i < argsv.size() + 1; i++)
     {
       argv[i] = argsv[i - 1].c_str();
     }
