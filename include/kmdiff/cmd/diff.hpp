@@ -102,7 +102,7 @@ namespace kmdiff {
     if (opt->model_lib_path.empty())
     {
       model = std::make_shared<PoissonLikelihood<DMAX_C>>(
-        opt->nb_controls, opt->nb_cases, total_controls, total_cases, 500);
+        opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->log_size);
     }
     #ifdef WITH_PLUGIN
       else
@@ -131,7 +131,7 @@ namespace kmdiff {
     {
       geno = std::make_shared<EigGenoFile<DMAX_C>>(gwas_eigenstratX_geno);
       snp = std::make_shared<EigSnpFile>(gwas_eigenstratX_snp);
-      sampler = std::make_shared<Sampler<DMAX_C>>(geno, snp, opt->kmer_pca);
+      sampler = std::make_shared<Sampler<DMAX_C>>(geno, snp, opt->kmer_pca, opt->seed);
     }
 
     global_merge<KSIZE, DMAX_C> merger(

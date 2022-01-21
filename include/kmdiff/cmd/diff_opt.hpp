@@ -34,6 +34,7 @@ namespace kmdiff {
     bool irls {false};
 
     std::size_t seed;
+    std::size_t log_size;
 
     std::string display()
     {
