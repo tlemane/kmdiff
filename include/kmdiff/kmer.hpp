@@ -75,6 +75,11 @@ namespace kmdiff {
 
     KmerSign() {}
 
+    void set_pval(double pvalue)
+    {
+      m_pvalue = pvalue;
+    }
+
     std::string to_string() const
     {
       return m_kmer.to_string();

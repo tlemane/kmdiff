@@ -17,6 +17,7 @@
  *****************************************************************************/
 
 #include <kmdiff/kmtricks_utils.hpp>
+#include <kmdiff/utils.hpp>
 
 #define KMTRICKS_PUBLIC
 #include <kmtricks/io/fof.hpp>
@@ -48,7 +49,9 @@ kmtricks_config_t get_kmtricks_config(const std::string& run_dir)
 
   std::size_t np = 0;
   for (auto& _ : fs::directory_iterator(fmt::format("{}/counts", run_dir)))
-    np++;
+  {
+    np++; unused(_);
+  }
   config.nb_partitions = np;
 
   if (!config.kmer_size || !config.nb_partitions)
@@ -68,11 +71,13 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
   const std::string& run_dir,
   size_t nb_controls,
   size_t nb_cases,
-  size_t ab_min)
+  size_t abundance_min)
 {
   auto fof = get_fofs(run_dir);
   std::vector<size_t> total_controls(nb_controls);
   std::vector<size_t> total_cases(nb_cases);
+
+  auto fof_it = fof.begin();
 
   for (std::size_t i = 0; i < total_controls.size(); i++)
   {
@@ -84,9 +89,16 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     auto info = hr.infos();
     auto& v = hist->get_vec();
 
+    std::size_t ab_min = std::get<2>(*fof_it); fof_it++;
+    if (ab_min == 0)
+      ab_min = abundance_min;
+
     total_controls[i] = info.total;
+
     for (std::size_t j=1; j<ab_min; j++)
+    {
       total_controls[i] -= (j) * v[j-1];
+    }
 
     spdlog::debug("{}: {} k-mers", fid, total_controls[i]);
   }
@@ -101,9 +113,16 @@ std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
     auto info = hr.infos();
     auto& v = hist->get_vec();
 
+    std::size_t ab_min = std::get<2>(*fof_it); fof_it++;
+    if (ab_min == 0)
+      ab_min = abundance_min;
+
     total_cases[i - nb_controls] = info.total;
+
     for (std::size_t j=1; j<ab_min; j++)
+    {
       total_cases[i - nb_controls] -= (j) * v[j-1];
+    }
 
     spdlog::debug("{}: {} k-mers", fid, total_cases[i - nb_controls]);
   }

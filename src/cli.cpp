@@ -36,6 +36,18 @@ namespace kmdiff {
 
   std::tuple<COMMAND, kmdiff_options_t> kmdiffCli::parse(int argc, char* argv[])
   {
+    if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h"))
+    {
+      cli->show_help();
+      exit(EXIT_FAILURE);
+    }
+
+    if (argc > 1 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v"))
+    {
+      std::cerr << fmt::format("kmdiff {}", KMD_PROJECT_VER) << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
     try
     {
       (*cli).parse(argc, argv);
@@ -138,7 +150,7 @@ namespace kmdiff {
           fmt::format("{} {} : Not a kmtricks runtime directory.", p, v));
     };
 
-    diff_cmd->add_param("--km-run", "kmtricks run directory.")
+    diff_cmd->add_param("-d/--km-run", "kmtricks run directory.")
         ->meta("DIR")
         ->checker(bc::check::is_dir)
         ->checker(is_kmtricks_dir)
@@ -149,12 +161,12 @@ namespace kmdiff {
         ->setter(options->output_directory)
         ->def("./kmdiff_output");
 
-    diff_cmd->add_param("--nb-controls", "number of controls.")
+    diff_cmd->add_param("-1/--nb-controls", "number of controls.")
         ->meta("INT")
         ->checker(bc::check::is_number)
         ->setter(options->nb_controls);
 
-    diff_cmd->add_param("--nb-cases", "number of cases.")
+    diff_cmd->add_param("-2/--nb-cases", "number of cases.")
         ->meta("INT")
         ->checker(bc::check::is_number)
         ->setter(options->nb_cases);
@@ -170,13 +182,13 @@ namespace kmdiff {
       return std::make_tuple(in, fmt::format("Not in range [0.0, 0.05]"));
     };
 
-    diff_cmd->add_param("--significance", "significance threshold.")
+    diff_cmd->add_param("-s/--significance", "significance threshold.")
         ->meta("FLOAT")
         ->checker(sign_check)
         ->setter(options->threshold)
         ->def("0.05");
 
-    diff_cmd->add_param("--cutoff", "cutoff")
+    diff_cmd->add_param("-u/--cutoff", "cutoff")
       ->meta("INT")
       ->checker(bc::check::is_number)
       ->setter(options->cutoff)
@@ -187,14 +199,19 @@ namespace kmdiff {
         options->correction = CorrectionType::BONFERRONI;
       else if (v == "benjamini")
         options->correction = CorrectionType::BENJAMINI;
+      else if (v == "sidak")
+        options->correction = CorrectionType::SIDAK;
+      else if (v == "holm")
+        options->correction = CorrectionType::HOLM;
       else
         options->correction = CorrectionType::NOTHING;
     };
 
-    bc::param_t cp = diff_cmd->add_param("-c/--correction", "significance correction.")
+    bc::param_t cp = diff_cmd->add_param("-c/--correction",
+                                         "significance correction. (bonferroni|benjamini|sidak|holm|disabled)")
         ->meta("STR")
         ->def("bonferroni")
-        ->checker(bc::check::f::in("bonferroni|benjamini|disabled"))
+        ->checker(bc::check::f::in("bonferroni|benjamini|sidak|holm|disabled"))
         ->setter_c(corr_setter);
 
     auto correction_warn = [cp](){
@@ -204,30 +221,36 @@ namespace kmdiff {
 
     cp->callback(correction_warn);
 
-    diff_cmd->add_param("--kff-output", "output significant k-mers in kff format.")
+    diff_cmd->add_param("-f/--kff-output", "output significant k-mers in kff format.")
         ->as_flag()
         ->setter(options->kff);
 
     auto memory_warn = [](){
-      spdlog::warn("--in-memory: all significants k-mers will live in memory.");
+      spdlog::warn("-m/--in-memory: all significants k-mers will live in memory.");
     };
-    diff_cmd->add_param("--in-memory", "in-memory correction.")
+    diff_cmd->add_param("-m/--in-memory", "in-memory correction.")
         ->as_flag()
         ->setter(options->in_memory)
         ->callback(memory_warn);
 
-    diff_cmd->add_group("custom model", "");
+    diff_cmd->add_param("-r/--cpr", "compress intermediate files")
+        ->as_flag()
+        ->setter(options->cpr);
 
-    diff_cmd->add_param("--cmodel", "path to model shared library")
-      ->meta("STR")
-      ->def("")
-      ->checker(bc::check::f::ext("so|dylib"))
-      ->setter(options->model_lib_path);
+    #ifdef WITH_PLUGIN
+      diff_cmd->add_group("custom model", "");
 
-    diff_cmd->add_param("--config", "model config")
-      ->meta("STR")
-      ->def("")
-      ->setter(options->model_config);
+      diff_cmd->add_param("--cmodel", "path to model shared library")
+        ->meta("STR")
+        ->def("")
+        ->checker(bc::check::f::ext("so|dylib"))
+        ->setter(options->model_lib_path);
+
+      diff_cmd->add_param("--config", "model config")
+        ->meta("STR")
+        ->def("")
+        ->setter(options->model_config);
+    #endif
 
     #ifdef WITH_POPSTRAT
       diff_cmd->add_group("population stratification", "");
@@ -235,6 +258,12 @@ namespace kmdiff {
       diff_cmd->add_param("--pop-correction", "apply correction for population stratification.")
           ->as_flag()
           ->setter(options->pop_correction);
+
+      diff_cmd->add_param("--gender", "gender file")
+          ->meta("FILE")
+          ->def("")
+          ->checker(bc::check::is_file)
+          ->setter(options->gender);
 
       diff_cmd->add_param("--kmer-pca", "proportion of k-mers used for PCA (in [0.0, 0.05]).")
           ->meta("FLOAT")

@@ -13,6 +13,7 @@ namespace kmdiff {
     double cutoff;
     CorrectionType correction;
     bool in_memory;
+    bool cpr;
     bool kff;
 
     std::string model_lib_path;
@@ -24,6 +25,7 @@ namespace kmdiff {
     bool is_diploid;
     size_t npc;
     std::string covariates;
+    std::string gender;
 
     double learning_rate;
     size_t max_iteration;
@@ -53,12 +55,14 @@ namespace kmdiff {
       KRECORD(ss, is_diploid);
       KRECORD(ss, npc);
       KRECORD(ss, covariates);
+      KRECORD(ss, gender);
   #endif
-    KRECORD(ss, learning_rate);
-    KRECORD(ss, max_iteration);
-    KRECORD(ss, epsilon);
-    KRECORD(ss, stand);
-    return ss.str();
+      KRECORD(ss, learning_rate);
+      KRECORD(ss, max_iteration);
+      KRECORD(ss, epsilon);
+      KRECORD(ss, stand);
+      KRECORD(ss, seed);
+      return ss.str();
     }
   };
 

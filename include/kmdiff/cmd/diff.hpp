@@ -79,11 +79,14 @@ namespace kmdiff {
     for (std::size_t i = 0; i < accumulators.size(); i++)
     {
       if (opt->in_memory)
+      {
         accumulators[i] = std::make_shared<VectorAccumulator<KmerSign<KSIZE>>>(65536);
+      }
       else
+      {
         accumulators[i] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
-          fmt::format("{}/acc_{}", output_part_dir, i), config.kmer_size
-        );
+          fmt::format("{}/acc_{}", output_part_dir, i), config.kmer_size);
+      }
     }
 
     std::vector<std::uint32_t> ab_mins(opt->nb_controls + opt->nb_cases, 1);
@@ -97,11 +100,21 @@ namespace kmdiff {
     std::shared_ptr<IModel<DMAX_C>> model {nullptr};
 
     if (opt->model_lib_path.empty())
+    {
       model = std::make_shared<PoissonLikelihood<DMAX_C>>(
         opt->nb_controls, opt->nb_cases, total_controls, total_cases, 500);
+    }
     #ifdef WITH_PLUGIN
       else
+      {
+        if (opt->pop_correction)
+        {
+          spdlog::warn("population stratification correction disabled with custom models.");
+        }
+
+        opt->pop_correction = false;
         model = plugin_manager<IModel<DMAX_C>>::get().get_plugin();
+      }
     #endif
 
     std::string pop_dir = fmt::format("{}/popstrat", opt->output_directory);
@@ -187,8 +200,15 @@ namespace kmdiff {
 
         for (std::size_t p = 0; p < accumulators.size(); p++)
         {
-          pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
-            fmt::format("{}/accp_{}", output_part_dir, p), config.kmer_size);
+          if (opt->in_memory)
+          {
+            pop_accumulators[p] = std::make_shared<VectorAccumulator<KmerSign<KSIZE>>>(65536);
+          }
+          else
+          {
+            pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+              fmt::format("{}/accp_{}", output_part_dir, p), config.kmer_size);
+          }
         }
 
         pop_corrector->apply(accumulators, pop_accumulators, 1);
@@ -217,11 +237,15 @@ namespace kmdiff {
       pb->print_progress();
     }
 
-    if (opt->correction != CorrectionType::BENJAMINI)
+    if (opt->correction != CorrectionType::BENJAMINI && opt->correction != CorrectionType::HOLM)
     {
       if (opt->correction == CorrectionType::BONFERRONI)
       {
         corrector = std::make_shared<bonferroni>(opt->threshold, total_kmers);
+      }
+      else if (opt->correction == CorrectionType::SIDAK)
+      {
+        corrector = std::make_shared<sidak>(opt->threshold, total_kmers);
       }
       else
       {
@@ -236,9 +260,16 @@ namespace kmdiff {
                                                 pb);
 
     }
-    else if (opt->correction == CorrectionType::BENJAMINI)
+    else
     {
-      corrector = std::make_shared<benjamini>(opt->threshold, total_kmers);
+      if (opt->correction == CorrectionType::BENJAMINI)
+      {
+        corrector = std::make_shared<benjamini>(opt->threshold, total_kmers);
+      }
+      else if (opt->correction == CorrectionType::HOLM)
+      {
+        corrector = std::make_shared<holm>(opt->threshold, total_kmers);
+      }
       agg = std::make_unique<sorted_aggregator<KSIZE>>(accumulators,
                                                        corrector,
                                                        config,

@@ -42,8 +42,8 @@ inline void main_infos()
   std::cerr << "conda: " << KMD_CONDA_BUILD << "\n";
   std::cerr << "static: " << KMD_STATIC_BUILD << "\n";
   std::cerr << "dev: " << KMD_DEV_BUILD << "\n";
-  std::cerr << "popsim: " << KMD_POPSIM_BUILD << "\n";
   std::cerr << "popstrat: " << KMD_POPSTRAT_BUILD << "\n";
+  std::cerr << "plugin: " << KMD_PLUGIN << "\n";
   std::cerr << "kmer: " << KMD_KMER_LIST_STR << "\n";
   std::cerr << "max_c: " << DMAX_C << "\n";
   std::cerr << "\n";
@@ -57,7 +57,9 @@ inline void main_infos()
   std::cerr << "robin-hood: " << KMD_ROBIN_SHA1 << "\n";
   std::cerr << "spdlog: " << KMD_SPDLOG_SHA1 << "\n";
   std::cerr << "xxHash: " << KMD_XXHASH_SHA1 << "\n";
-  std::cerr << "wgsim: " << KMD_WGSIM_SHA1 << "\n";
+  std::cerr << "indicators: " << KMD_INDICATORS_SHA1 << "\n";
+  std::cerr << "gsl: " << KMD_GSL_VERSION << "\n";
+  std::cerr << "openblas: " << KMD_OPENBLAS_VERSION << "\n";
   std::cerr << std::flush;
 }
 

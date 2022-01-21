@@ -16,6 +16,12 @@ namespace kmdiff {
       case CorrectionType::BENJAMINI:
         return "BENJAMINI";
         break;
+      case CorrectionType::SIDAK:
+        return "SIDAK";
+        break;
+      case CorrectionType::HOLM:
+        return "HOLM";
+        break;
       default:
         return "";
         break;

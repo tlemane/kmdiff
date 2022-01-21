@@ -150,8 +150,14 @@ namespace kmdiff {
   template <typename T>
   class FileAccumulator : public IAccumulator<T>
   {
+    using o_stream_t = std::ostream;
+    using i_stream_t = std::istream;
+
     using out_stream_t = std::ofstream;
     using in_stream_t = std::ifstream;
+
+    using cpr_out_stream_t = lz4_stream::basic_ostream<8192>;
+    using cpr_in_stream_t = lz4_stream::basic_istream<8192>;
 
    public:
     FileAccumulator(const std::string& path, size_t k_size = 0) : m_path(path), m_kmer_size(k_size)

@@ -308,7 +308,7 @@ namespace kmdiff {
 
         spdlog::debug("{} {} {} {}", ks.to_string(), ks.m_pvalue, corrected, significance_to_char(ks.m_sign));
 
-        ks.m_pvalue = corrected;
+        ks.set_pval(corrected);
       }
 
     private:

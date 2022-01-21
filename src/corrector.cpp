@@ -44,6 +44,42 @@ namespace kmdiff {
     return "benjamini";
   }
 
+  sidak::sidak(double threshold, std::size_t total)
+    : m_total(total), m_threshold(threshold) {}
+
+  bool sidak::apply(double pvalue)
+  {
+    return pvalue < (1 - std::pow(1 - m_threshold, 1 / m_total));
+  }
+
+  CorrectionType sidak::type()
+  {
+    return CorrectionType::SIDAK;
+  }
+
+  std::string sidak::str_type()
+  {
+    return "sidak";
+  }
+
+  holm::holm(double threshold, std::size_t total)
+    : m_total(total), m_threshold(threshold) {}
+
+  bool holm::apply(double pvalue)
+  {
+    return pvalue < (m_threshold / m_total--);
+  }
+
+  CorrectionType holm::type()
+  {
+    return CorrectionType::HOLM;
+  }
+
+  std::string holm::str_type()
+  {
+    return "holm";
+  }
+
   basic_threshold::basic_threshold(double threshold)
     : m_threshold(threshold) {}
 

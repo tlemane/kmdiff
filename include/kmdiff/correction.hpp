@@ -8,7 +8,9 @@ namespace kmdiff {
   {
     NOTHING,
     BONFERRONI,
-    BENJAMINI
+    BENJAMINI,
+    SIDAK,
+    HOLM
   };
 
   std::string correction_type_str(const CorrectionType type);
