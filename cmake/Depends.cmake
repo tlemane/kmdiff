@@ -27,10 +27,16 @@ macro(find_dependencies)
     /usr/local/include/openblas
   )
 
-  execute_process(
-    COMMAND bash "-c" "grep OPENBLAS_VERSION ${BLAS_INCLUDE_DIRS}/openblas_config-x86_64.h | cut -d' ' -f5"
-    OUTPUT_VARIABLE OPENBLAS_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+  if (BLAS_INCLUDE_DIRS STREQUAL "BLAS_INCLUDE_DIRS-NOTFOUND")
+    set(BLAS_INCLUDE_DIRS "")
+    set(OPENBLAS_VERSION "unknown")
+  else()
+    execute_process(
+      COMMAND bash "-c" "grep OPENBLAS_VERSION ${BLAS_INCLUDE_DIRS}/openblas_config-x86_64.h | cut -d' ' -f5"
+      OUTPUT_VARIABLE OPENBLAS_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  endif()
+
 endmacro()
 
