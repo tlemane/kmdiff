@@ -2,13 +2,13 @@
 
 function kmdiff_build ()
 {
-  OPT="-DCMAKE_BUILD_TYPE=${1} -DKMER_LIST=${2} -DMAX_C=${3} -DWITH_POPSTRAT=${4}"
+  OPT="-DCMAKE_BUILD_TYPE=${1} -DKMER_LIST=\"${2}\" -DMAX_C=${3} -DWITH_POPSTRAT=${4}"
   echo "Options: ${OPT} ${6}"
 
   mkdir kmdiff_build
   cd kmdiff_build
 
-  cmake .. ${OPT}
+  cmake .. "${OPT}"
 
   make -j${6}
 
