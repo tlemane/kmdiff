@@ -29,6 +29,10 @@
   #define KMER_LIST KMD_KMER_LIST
 #endif
 
+#ifndef KMER_N
+  #define KMER_N KMD_KMERN
+#endif
+
 #include <kmtricks/loop_executor.hpp>
 
 #define KM_EXEC_HELPER(helper_name, func_name)            \

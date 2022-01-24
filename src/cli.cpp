@@ -96,9 +96,9 @@ namespace kmdiff {
 
     count_cmd->add_param("-d/--run-dir", "output directory.")->meta("DIR")->setter(options->dir);
 
-    count_cmd->add_param("-k/--kmer-size", fmt::format("size of k-mers [{}, {}]", 8, KL[KMER_N-1]-1))
+    count_cmd->add_param("-k/--kmer-size", fmt::format("size of k-mers [{}, {}]", 8, KL[KMD_KMERN-1]-1))
         ->def("31")
-        ->checker(bc::check::f::range(8, KL[KMER_N-1]-1))
+        ->checker(bc::check::f::range(8, KL[KMD_KMERN-1]-1))
         ->setter(options->kmer_size)
         ->meta("INT");
 
@@ -107,6 +107,12 @@ namespace kmdiff {
         ->setter(options->abundance_min)
         ->def("1")
         ->meta("INT");
+
+    count_cmd->add_param("-r/--recurrence-min", "min recurrence to keep a k-mer")
+        ->def("1")
+        ->meta("INT")
+        ->checker(bc::check::is_number)
+        ->setter(options->recurrence_min);
 
     count_cmd->add_group("advanced performance tweaks", {});
 

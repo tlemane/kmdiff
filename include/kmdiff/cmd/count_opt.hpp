@@ -10,6 +10,7 @@ namespace kmdiff {
     std::string dir;
     int kmer_size;
     int abundance_min;
+    int recurrence_min;
     int memory;
     int minimizer_type;
     int minimizer_size;
@@ -24,6 +25,7 @@ namespace kmdiff {
       KRECORD(ss, dir);
       KRECORD(ss, kmer_size);
       KRECORD(ss, abundance_min);
+      KRECORD(ss, recurrence_min);
       KRECORD(ss, memory);
       KRECORD(ss, minimizer_type);
       KRECORD(ss, minimizer_size);
