@@ -53,7 +53,7 @@ jobs:
           cd build
           export CC=$(which ${{ matrix.cc }})
           export CXX=$(which ${{ matrix.cxx }})
-          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=OFF -DWITH_POPSTRAT=OFF
+          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=OFF
 
       - name: Build
         shell: bash
@@ -62,6 +62,17 @@ jobs:
           export CC=$(which ${{ matrix.cc }})
           export CXX=$(which ${{ matrix.cxx }})
           make -j2
+
+      - name: Tests
+        shell: bash
+        run: cd build && ctest --verbose
+
+      - name: Release archive
+        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          mkdir archive_files
+          bash scripts/git-archive-all.sh --format tar.gz ./archive_files/kmdiff-${{ steps.tag.outputs.TAG }}-sources.tar.gz
 
   MacOS:
     runs-on: macos-10.15
