@@ -61,6 +61,10 @@ add_library(links INTERFACE)
 target_link_libraries(links INTERFACE pthread dl)
 add_library(deps INTERFACE)
 
+if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
+  link_libraries(stdc++fs)
+endif()
+
 if (NOT KMER_LIST)
   set (KMER_LIST "32 64 96 128")
 endif()
@@ -108,7 +112,6 @@ if (WITH_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
-
 
 #if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
 #  message(STATUS "MAKE_PACKAGE=ON - Add target package.")
