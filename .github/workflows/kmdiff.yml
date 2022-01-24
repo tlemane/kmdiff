@@ -43,7 +43,7 @@ jobs:
 
       - name: Dependencies
         run: |
-          sudo apt-get install ${{ matrix.compiler }}
+          sudo apt-get install ${{ matrix.compiler }} libgtest-dev
           sudo apt-get install libgsl-dev libopenblas-dev liblapack-dev liblapacke-dev libbz2-dev zlib1g zlib1g-dev
 
       - name: Configure
