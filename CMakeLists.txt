@@ -104,10 +104,10 @@ if (WITH_PLUGIN)
   add_subdirectory(plugins)
 endif()
 
-#if (WITH_TESTS)
-#  enable_testing()
-#  add_subdirectory(tests)
-#endif()
+if (WITH_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
 
 
 #if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
@@ -155,3 +155,7 @@ if (WITH_POPSTRAT)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
   add_dependencies(clean_hawk HAWK)
 endif()
+
+include(GNUInstallDirs)
+install (TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (FILES ${CMAKE_SOURCE_DIR}/bin/smartpca DESTINATION ${CMAKE_INSTALL_BINDIR})

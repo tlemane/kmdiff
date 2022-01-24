@@ -17,6 +17,9 @@
  *****************************************************************************/
 
 #include <gtest/gtest.h>
+#include <spdlog/spdlog.h>
+
+#include <kmdiff/range.hpp>
 #include <kmdiff/utils.hpp>
 #include <kmdiff/kmer.hpp>
 #include <chrono>
@@ -34,7 +37,6 @@ TEST(utils, commands_exists)
 TEST(utils, get_binary_dir)
 {
   std::string dir = get_binary_dir();
-  std::cerr << get_binary_dir() << std::endl;
   EXPECT_NO_THROW(command_exists(dir, "kmdiff-tests"));
 }
 
@@ -63,7 +65,7 @@ TEST(utils, slice)
   EXPECT_EQ(mid.size(), 5);
   EXPECT_EQ(to_end.size(), 5);
   EXPECT_EQ(too_large.size(), 10);
-  
+
   for (size_t i=0; i<from_start.size(); i++)
     EXPECT_EQ(from_start[i], v[i]);
   for (size_t i=0; i<mid.size(); i++)
@@ -76,19 +78,19 @@ TEST(utils, slice)
 
 TEST(utils, verbosity)
 {
-  EXPECT_EQ(str_to_verbosity_level("DEBUG"), VerbosityLevel::DEBUG);
-  EXPECT_EQ(str_to_verbosity_level("INFO"), VerbosityLevel::INFO);
-  EXPECT_EQ(str_to_verbosity_level("WARNING"), VerbosityLevel::WARNING);
-  EXPECT_EQ(str_to_verbosity_level("ERROR"), VerbosityLevel::ERROR);
-  EXPECT_EQ(str_to_verbosity_level("DEF"), VerbosityLevel::WARNING);
+  EXPECT_EQ(str_to_verbosity_level("debug"), VerbosityLevel::DEBUG);
+  EXPECT_EQ(str_to_verbosity_level("info"), VerbosityLevel::INFO);
+  EXPECT_EQ(str_to_verbosity_level("warning"), VerbosityLevel::WARNING);
+  EXPECT_EQ(str_to_verbosity_level("error"), VerbosityLevel::ERROR);
+  EXPECT_EQ(str_to_verbosity_level("def"), VerbosityLevel::WARNING);
 
-  set_verbosity_level("DEBUG");
+  set_verbosity_level("debug");
   EXPECT_EQ(spdlog::get_level(), spdlog::level::debug);
-  set_verbosity_level("INFO");
+  set_verbosity_level("info");
   EXPECT_EQ(spdlog::get_level(), spdlog::level::info);
-  set_verbosity_level("WARNING");
+  set_verbosity_level("warning");
   EXPECT_EQ(spdlog::get_level(), spdlog::level::warn);
-  set_verbosity_level("ERROR");
+  set_verbosity_level("error");
   EXPECT_EQ(spdlog::get_level(), spdlog::level::err);
 }
 
@@ -98,17 +100,9 @@ TEST(utils, rss)
   EXPECT_GE(get_current_rss(), 0);
 }
 
-TEST(utils, timer)
-{
-  using namespace std::chrono_literals;
-  Timer t;
-  std::this_thread::sleep_for(50ms);
-  EXPECT_GT(t.elapsed<std::chrono::milliseconds>().count(), 0);
-}
-
 TEST(utils, ext)
 {
-  EXPECT_NO_THROW(exec_external_cmd("ls", ""));
+  EXPECT_NO_THROW(exec_external_cmd("ls", "", "./tests_tmp/ext_test"));
   EXPECT_THROW(exec_external_cmd("./ret1.sh", ""), ExternalExecFailed);
   EXPECT_GT(get_uname_sr().size(), 0);
 }

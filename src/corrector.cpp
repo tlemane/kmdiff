@@ -49,7 +49,7 @@ namespace kmdiff {
 
   bool sidak::apply(double pvalue)
   {
-    return pvalue < (1 - std::pow(1 - m_threshold, 1 / m_total));
+    return pvalue < (1 - std::pow(1 - m_threshold, 1.0 / m_total));
   }
 
   CorrectionType sidak::type()

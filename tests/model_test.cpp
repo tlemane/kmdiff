@@ -36,7 +36,6 @@ TEST(model, model)
   std::vector<uint8_t> v {2, 2, 0, 10, 0, 1, 0, 0, 42, 2};
 
   EXPECT_FLOAT_EQ(model.compute_mean(v), 5.9);
-  std::tuple<double, size_t> t = std::make_tuple(5.9, 6);
   auto [mean, n] = model.compute_mean_e(v);
 
   EXPECT_FLOAT_EQ(mean, 5.9);
@@ -81,22 +80,3 @@ TEST(model, poisson_likelihood)
   }
 }
 
-TEST(model, icorrector)
-{
-  ICorrector c;
-  EXPECT_TRUE(c.apply(0.0));
-}
-
-TEST(model, bonferroni)
-{
-  Bonferroni b(0.05, 100);
-  EXPECT_TRUE(b.apply(0.0004));
-  EXPECT_FALSE(b.apply(0.0006));
-}
-
-TEST(model, benjamini)
-{
-  BenjaminiHochberg b(0.25, 25);
-  EXPECT_TRUE(b.apply(0.001));
-  EXPECT_FALSE(b.apply(0.021));
-}

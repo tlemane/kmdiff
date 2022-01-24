@@ -139,7 +139,6 @@ TEST(linear, lu_decomposition)
 
   double epsilon = 1e-15;
   auto [inv_, a, b] = inverse(m, nrows(m));
-  std::cerr << nrows(inv) << " " << ncols(inv) << std::endl;
   for (size_t i=0; i<nrows(inv); i++)
   {
     for (size_t j=0; j<ncols(inv); j++)

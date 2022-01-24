@@ -91,7 +91,7 @@ namespace kmdiff {
   }
 
   template <typename T>
-  std::vector<T> slice(const std::vector<T>& v, int i, int j)
+  std::vector<T> slice(const std::vector<T>& v, size_t i, size_t j)
   {
     if (j > v.size() - 1) j = v.size() - 1;
     return std::vector<T>(v.cbegin() + i, v.cbegin() + j + 1);

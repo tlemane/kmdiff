@@ -16,7 +16,7 @@ add_format_project_target("${PROJECT_FILES}")
 add_library(${PROJECT_NAME}lib ${CPP_FILES})
 target_link_libraries(${PROJECT_NAME}lib PUBLIC warning_flags build_type_flags headers links deps)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} main.cc)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}lib)
 
 if(WITH_POPSTRAT)
