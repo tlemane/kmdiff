@@ -25,16 +25,30 @@ target_link_libraries(links INTERFACE fmt)
 add_dependencies(deps FMT)
 
 string(REPLACE "," " " KMER_LIST_KM ${KMER_LIST})
-ExternalProject_Add(
-  KMTRICKS
-  PREFIX KMTRICKS
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
-  CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}" "-DSTATIC=${STATIC}"
-  INSTALL_COMMAND ""
-  BUILD_COMMAND $<$<BOOL:${WITH_KMTRICKS}>:make>
-  LOG_CONFIGURE ON
-  LOG_BUILD ON
-)
+
+if (WITH_KMTRICKS)
+  ExternalProject_Add(
+    KMTRICKS
+    PREFIX KMTRICKS
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
+    CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}" "-DSTATIC=${STATIC}"
+    INSTALL_COMMAND ""
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
+  )
+else()
+  ExternalProject_Add(
+    KMTRICKS
+    PREFIX KMTRICKS
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
+    CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}" "-DSTATIC=${STATIC}"
+    INSTALL_COMMAND ""
+    BUILD_COMMAND ""
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
+  )
+endif()
+
 target_include_directories(headers SYSTEM INTERFACE
   ${THIRD_DIR}/kmtricks/include
   ${THIRD_DIR}/kmtricks/thirdparty/TurboPFor-Integer-Compression
@@ -61,12 +75,13 @@ ExternalProject_Add(
 target_include_directories(headers SYSTEM INTERFACE ${THIRD_DIR}/spdlog/include)
 add_dependencies(deps SPDLOG)
 
+#Set standard to C99 because of bug in xxHash related to C11 static_assert
 ExternalProject_Add(
   XXHASH
   PREFIX XXHASH
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/xxHash
   SOURCE_SUBDIR "cmake_unofficial"
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DXXHASH_BUILD_XXHSUM=0FF
+  CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DXXHASH_BUILD_XXHSUM=0FF -DCMAKE_C_STANDARD=99
   INSTALL_COMMAND ""
   LOG_CONFIGURE ON
   LOG_BUILD ON

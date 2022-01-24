@@ -127,13 +127,15 @@ endif()
 #endif()
 #
 
-add_custom_target(
-  copy_km ALL
-  DEPENDS KMTRICKS
-  COMMAND cp ./thirdparty/kmtricks/bin/kmtricks ./bin
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-)
-add_dependencies(copy_km KMTRICKS)
+if (WITH_KMTRICKS)
+  add_custom_target(
+    copy_km ALL
+    DEPENDS KMTRICKS
+    COMMAND cp ./thirdparty/kmtricks/bin/kmtricks ./bin
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
+  add_dependencies(copy_km KMTRICKS)
+endif()
 
 if (WITH_POPSTRAT)
   if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)

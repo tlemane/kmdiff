@@ -24,12 +24,16 @@ macro(find_dependencies)
       message(FATAL_ERROR "LAPACKE is requred with -DWITH_POPSTRAT=ON")
     endif()
 
-    find_path(BLAS_INCLUDE_DIRS openblas_config-x86_64.h
-      /usr/include
-      /usr/include/openblas
-      /usr/local/include/
-      /usr/local/include/openblas
-    )
+    if (CONDA_BUILD)
+      set(BLAS_INCLUDE_DIRS "BLAS_INCLUDE_DIR-NOTFOUND")
+    else()
+      find_path(BLAS_INCLUDE_DIRS openblas_config-x86_64.h
+        /usr/include
+        /usr/include/openblas
+        /usr/local/include/
+        /usr/local/include/openblas
+      )
+    endif()
 
   endif()
 
