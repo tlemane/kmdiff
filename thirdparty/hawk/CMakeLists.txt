@@ -62,9 +62,12 @@ target_link_libraries(smartpca
   nick
   GSL::gsl
   ${BLAS_LIBRARIES}
-  ${LAPACKE_LIBRARIES}
   m
   pthread
 )
+
+if (NOT APPLE)
+  target_link_libraries(smartpca ${LAPACKE_LIBRARIES})
+endif()
 target_compile_options(smartpca PRIVATE "-Wno-alloc-size-larger-than")
 add_dependencies(smartpca EIGNICK)

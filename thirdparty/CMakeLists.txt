@@ -24,11 +24,12 @@ target_link_directories(links INTERFACE ${THIRD_BINDIR}/FMT/src/FMT-build)
 target_link_libraries(links INTERFACE fmt)
 add_dependencies(deps FMT)
 
+string(REPLACE "," " " KMER_LIST_KM ${KMER_LIST})
 ExternalProject_Add(
   KMTRICKS
   PREFIX KMTRICKS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
-  CMAKE_ARGS -DKMER_LIST=32 -DMAX_C=${MAX_C} -DSTATIC=${STATIC}
+  CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}" "-DSTATIC=${STATIC}"
   INSTALL_COMMAND ""
   BUILD_COMMAND $<$<BOOL:${WITH_KMTRICKS}>:make>
   LOG_CONFIGURE ON

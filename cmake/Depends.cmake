@@ -1,7 +1,13 @@
 macro(find_dependencies)
 
   set(BLA_VENDOR OpenBLAS)
-  find_package(BLAS REQUIRED)
+
+  if (NOT APPLE)
+    find_package(BLAS REQUIRED)
+  else()
+    find_package(BLAS REQUIRED PATHS /usr/local/opt/openblas/)
+  endif()
+
   if (NOT BLAS_FOUND)
     message(FATAL_ERROR "OpenBLAS is required with -DWITH_POPSTRAT=ON")
   endif()
@@ -15,19 +21,23 @@ macro(find_dependencies)
   set(LAPACKE_INCDIR "/usr/include/;/usr/include/openblas")
   set(LAPACKE_LIBDIR "/usr/lib64/;/usr/local/lib64")
 
-  find_package(LAPACKE REQUIRED)
-  if (NOT LAPACKE_FOUND)
-    message(FATAL_ERROR "LAPACKE is requred with -DWITH_POPSTRAT=ON")
+  if (NOT APPLE)
+
+    find_package(LAPACKE REQUIRED)
+    if (NOT LAPACKE_FOUND)
+      message(FATAL_ERROR "LAPACKE is requred with -DWITH_POPSTRAT=ON")
+    endif()
+
+    find_path(BLAS_INCLUDE_DIRS openblas_config-x86_64.h
+      /usr/include
+      /usr/include/openblas
+      /usr/local/include/
+      /usr/local/include/openblas
+    )
+
   endif()
 
-  find_path(BLAS_INCLUDE_DIRS openblas_config-x86_64.h
-    /usr/include
-    /usr/include/openblas
-    /usr/local/include/
-    /usr/local/include/openblas
-  )
-
-  if (BLAS_INCLUDE_DIRS STREQUAL "BLAS_INCLUDE_DIRS-NOTFOUND")
+  if (BLAS_INCLUDE_DIRS STREQUAL "BLAS_INCLUDE_DIRS-NOTFOUND" OR APPLE)
     set(BLAS_INCLUDE_DIRS "")
     set(OPENBLAS_VERSION "unknown")
   else()
