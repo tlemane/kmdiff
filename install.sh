@@ -17,7 +17,7 @@ function kmdiff_build ()
 
   make -j${6}
 
-  if [[ ${7} == 1 ]]; then
+  if [[ ${7} == 2 ]]; then
     ctest --verbose
   fi
 }
