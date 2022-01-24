@@ -2,11 +2,7 @@ macro(find_dependencies)
 
   set(BLA_VENDOR OpenBLAS)
 
-  if (NOT APPLE)
-    find_package(BLAS REQUIRED)
-  else()
-    find_package(BLAS REQUIRED PATHS /usr/local/opt/openblas/)
-  endif()
+  find_package(BLAS REQUIRED)
 
   if (NOT BLAS_FOUND)
     message(FATAL_ERROR "OpenBLAS is required with -DWITH_POPSTRAT=ON")

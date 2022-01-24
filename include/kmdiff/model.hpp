@@ -117,7 +117,7 @@ namespace kmdiff {
     {
     }
 
-    void configure(const std::string& config) {}
+    void configure(const std::string& config) override {}
    private:
     double log_factorial(int k)
     {

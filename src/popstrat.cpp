@@ -43,8 +43,8 @@ namespace kmdiff {
   }
 
   void write_gwas_eigenstrat_total(const std::string& path,
-                                   const std::vector<std::uint64_t>& c1,
-                                   const std::vector<std::uint64_t>& c2)
+                                   const std::vector<std::size_t>& c1,
+                                   const std::vector<std::size_t>& c2)
   {
     std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
     for (auto& e : c1)

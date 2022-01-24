@@ -8,7 +8,12 @@ function kmdiff_build ()
   mkdir kmdiff_build
   cd kmdiff_build
 
-  cmake .. "${OPT}"
+  if [ "$(uname)" == "Darwin" ]; then
+    OPT="-DCMAKE_PREFIX_PATH=/usr/local/opt/openblas ${OPT}"
+  fi
+  cmake_cmd="cmake .. ${OPT}"
+
+  eval ${cmake_cmd}
 
   make -j${6}
 

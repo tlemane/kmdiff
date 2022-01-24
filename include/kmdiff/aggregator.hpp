@@ -92,6 +92,8 @@ namespace kmdiff {
           m_pb(pb)
       {}
 
+      virtual ~IAggregator() {}
+
       virtual void run() = 0;
 
       std::tuple<std::size_t, std::size_t> counts() const

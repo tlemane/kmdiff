@@ -44,8 +44,8 @@ namespace kmdiff {
                        size_t nb_controls, size_t nb_cases);
 
   void write_gwas_eigenstrat_total(const std::string& path,
-                                   const std::vector<std::uint64_t>& c1,
-                                   const std::vector<std::uint64_t>& c2);
+                                   const std::vector<std::size_t>& c1,
+                                   const std::vector<std::size_t>& c2);
 
   void run_eigenstrat_smartpca(const std::string& popstrat_dir,
                                const std::string& parfile,
