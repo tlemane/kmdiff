@@ -4,30 +4,20 @@ project(kmdiff VERSION 0.0.1 LANGUAGES C CXX)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 option(WITH_KMTRICKS "Build kmtricks" ON)
-option(WITH_TESTS "Compile tests" OFF)
-option(MAKE_PACKAGE "Build package" OFF)
-option(CONDA_BUILD "Build inside conda env" OFF)
-option(STATIC "Static build" OFF)
+option(WITH_TESTS "Build tests" OFF)
 option(WITH_POPSTRAT "Build with population stratification support" ON)
 option(WITH_PLUGIN "Build plugins" OFF)
 
-#set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
+option(CONDA_BUILD "Build inside conda env" OFF)
+option(DEV_BUILD "Dev build" OFF)
+
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 if (WITH_POPSTRAT)
   include(Depends)
   find_dependencies()
-endif()
-
-if (STATIC AND NOT APPLE)
-  set(CMAKE_EXE_LINKER_FLAGS "-static")
-endif()
-
-if (NOT MAX_C)
-  set(MAX_C 4294967295)
-endif()
-
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
@@ -57,12 +47,18 @@ target_include_directories(headers INTERFACE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_BINARY_DIR}/include
 )
+
 add_library(links INTERFACE)
 target_link_libraries(links INTERFACE pthread dl)
+
 add_library(deps INTERFACE)
 
 if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
   link_libraries(stdc++fs)
+endif()
+
+if (NOT MAX_C)
+  set(MAX_C 4294967295)
 endif()
 
 if (NOT KMER_LIST)
@@ -75,11 +71,7 @@ list(LENGTH KMER_LIST_ KMER_N)
 
 add_compile_definitions(DMAX_C=${MAX_C})
 
-if (WITH_POPSIM)
-  add_compile_definitions(WITH_POPSIM)
-endif()
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(thirdparty)
 
@@ -99,8 +91,6 @@ get_sha1(${THIRDPARTY_DIR}/indicators INDICATORS_SHA1)
 
 configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINARY_DIR}/include/kmdiff/config.hpp)
 
-set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
-
 add_subdirectory(include)
 add_subdirectory(src)
 
@@ -113,41 +103,24 @@ if (WITH_TESTS)
   add_subdirectory(tests)
 endif()
 
-#if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
-#  message(STATUS "MAKE_PACKAGE=ON - Add target package.")
-#  include(CPackConfig)
-#endif()
-#
-#add_custom_target(end ALL
-#        ${CMAKE_COMMAND} -E cmake_echo_color --cyan
-#        "Binaries: ${PROJECT_SOURCE_DIR}/bin"
-#        COMMENT "" )
-#
-#if (COMPILE_TESTS)
-#  add_dependencies(end ${PROJECT_NAME} ${PROJECT_NAME}-tests)
-#else()
-#  add_dependencies(end ${PROJECT_NAME})
-#endif()
-#
-
 if (WITH_KMTRICKS)
   add_custom_target(
     copy_km ALL
     DEPENDS KMTRICKS
-    COMMAND cp ./thirdparty/kmtricks/bin/kmtricks ./bin
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMAND cp ./thirdparty/kmtricks/bin/kmtricks ${CMAKE_BINARY_DIR}/bin
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   )
   add_dependencies(copy_km KMTRICKS)
 endif()
 
 if (WITH_POPSTRAT)
-  if (NOT EXISTS ${PROJECT_SOURCE_DIR}/bin/smartpca)
+  if (NOT EXISTS ${CMAKE_BINARY_DIR}/bin/smartpca)
     add_custom_target(
       copy_hawk ALL
       DEPENDS HAWK
-      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ../bin
-      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ../bin
-      WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ${CMAKE_BINARY_DIR}/bin
+      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ${CMAKE_BINARY_DIR}/bin
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
     add_dependencies(copy_hawk HAWK)
   endif()
   add_custom_target(
@@ -155,7 +128,7 @@ if (WITH_POPSTRAT)
     DEPENDS HAWK
     COMMAND make clobber
     COMMAND make clean
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
   add_dependencies(clean_hawk HAWK)
 endif()
 

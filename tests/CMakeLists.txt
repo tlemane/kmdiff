@@ -11,7 +11,7 @@ set(TEST_FILES
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/tests)
 add_executable(${PROJECT_NAME}-tests ${TEST_FILES})
-target_link_libraries(${PROJECT_NAME}-tests ${PROJECT_NAME}lib headers gtest gtest_main pthread)
+target_link_libraries(${PROJECT_NAME}-tests ${PROJECT_NAME} headers gtest gtest_main pthread)
 
 add_test(
   NAME kmdiff-tests
