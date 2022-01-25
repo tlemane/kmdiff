@@ -239,14 +239,15 @@ namespace kmdiff {
         ->setter(options->in_memory)
         ->callback(memory_warn);
 
-    diff_cmd->add_param("-r/--cpr", "compress intermediate files")
+    diff_cmd->add_param("-r/--cpr", "compress intermediate files.")
         ->as_flag()
-        ->setter(options->cpr);
+        ->setter(options->cpr)
+        ->hide();
 
     #ifdef WITH_PLUGIN
       diff_cmd->add_group("custom model", "");
 
-      diff_cmd->add_param("--cmodel", "path to model shared library")
+      diff_cmd->add_param("--cmodel", "path to model shared library.")
         ->meta("STR")
         ->def("")
         ->checker(bc::check::f::ext("so|dylib"))
@@ -302,49 +303,46 @@ namespace kmdiff {
           ->setter(options->covariates);
     #endif
 
-    diff_cmd->add_group("dev", "dev parameters")->hide();
+    #if KMD_DEV_MODE
+      diff_cmd->add_group("dev", "");
+    #else
+      diff_cmd->add_group("dev", "")->hide();
+    #endif
 
     diff_cmd->add_param("--learning-rate", "learning rate.")
         ->meta("FLOAT")
         ->def("0")
         ->checker(bc::check::f::range(0.0, 1.0))
-        ->setter(options->learning_rate)
-        ->hide();
+        ->setter(options->learning_rate);
 
     diff_cmd->add_param("--max-iteration", "max iteration.")
         ->meta("INT")
         ->def("0")
         ->checker(bc::check::is_number)
-        ->setter(options->max_iteration)
-        ->hide();
+        ->setter(options->max_iteration);
 
     diff_cmd->add_param("--epsilon", "epsilon.")
         ->meta("INT")
         ->def("0")
-        ->setter(options->epsilon)
-        ->hide();
+        ->setter(options->epsilon);
 
     diff_cmd->add_param("--stand", "standardization.")
         ->as_flag()
-        ->setter(options->stand)
-        ->hide();
+        ->setter(options->stand);
 
     diff_cmd->add_param("--irls", "use irls algorithm.")
         ->as_flag()
-        ->setter(options->irls)
-        ->hide();
+        ->setter(options->irls);
 
-    diff_cmd->add_param("--random-seed", "random seed for pca sampling")
+    diff_cmd->add_param("--random-seed", "random seed for pca sampling (deterministic only with 1 thread).")
         ->meta("INT")
         ->def("0")
-        ->setter(options->seed)
-        ->hide();
+        ->setter(options->seed);
 
-    diff_cmd->add_param("--log-factorial", "size of precomputed table")
+    diff_cmd->add_param("--log-factorial", "size of precomputed table.")
         ->meta("INT")
         ->def("10000")
-        ->setter(options->log_size)
-        ->hide();
+        ->setter(options->log_size);
 
     add_common(diff_cmd, options);
 

@@ -13,11 +13,16 @@ endforeach()
 
 add_format_project_target("${PROJECT_FILES}")
 
-add_library(${PROJECT_NAME}lib ${CPP_FILES})
-target_link_libraries(${PROJECT_NAME}lib PUBLIC warning_flags build_type_flags headers links deps)
+add_library(${PROJECT_NAME} ${CPP_FILES})
+target_link_libraries(${PROJECT_NAME} PUBLIC warning_flags build_type_flags headers links deps)
 
-add_executable(${PROJECT_NAME} main.cc)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}lib)
+add_executable(${PROJECT_NAME}-bin main.cc)
+target_link_libraries(${PROJECT_NAME}-bin PRIVATE ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME kmdiff)
+
+if(DEV_BUILD)
+  add_compile_definitions(KMD_DEV_MODE)
+endif()
 
 if(WITH_POPSTRAT)
   add_compile_definitions(WITH_POPSTRAT)

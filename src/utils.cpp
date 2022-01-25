@@ -50,7 +50,9 @@ namespace kmdiff {
   #if __APPLE__
     _NSGetExecutablePath(buffer, &size);
   #else
-    readlink("/proc/self/exe", buffer, size);
+    auto r = readlink("/proc/self/exe", buffer, size);
+    if (r == -1)
+      throw BinaryNotFound("Unable to found kmdiff binary path.");
   #endif
     return fs::path(buffer).parent_path();
   }
