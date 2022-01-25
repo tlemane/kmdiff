@@ -8,14 +8,13 @@ function kmdiff_build ()
   [[ -d "kmdiff_build" ]] || mkdir kmdiff_build
   cd kmdiff_build
 
-  if [ "$(uname)" == "Darwin" ]; then
-    OPT="-DCMAKE_PREFIX_PATH=/usr/local/opt/openblas ${OPT}"
-  fi
-  cmake_cmd="cmake .. ${OPT}"
-
   [[ ${8} == 1 ]] && rm CMakeCache.txt
 
-  eval ${cmake_cmd}
+  if [ "$(uname)" == "Darwin" ]; then
+    cmake .. -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
+  else
+    cmake .. -DCMAKE_PREFIX_PATH=/usr/local/opt/openblas -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
+  fi
 
   make -j${6}
 
@@ -48,7 +47,7 @@ function kmdiff_build_conda ()
   [[ -d "kmdiff_build" ]] || mkdir kmdiff_build
   cd kmdiff_build
 
-  cmake .. "-DCMAKE_PREFIX_PATH=./kmdiff_conda/ ${OPT}"
+  cmake .. -DCMAKE_PREFIX_PATH=./kmdiff_conda -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
 
   make -j${6}
 

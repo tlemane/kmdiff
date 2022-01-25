@@ -52,6 +52,7 @@ add_library(links INTERFACE)
 target_link_libraries(links INTERFACE pthread dl)
 
 add_library(deps INTERFACE)
+add_library(tests INTERFACE)
 
 if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
   link_libraries(stdc++fs)

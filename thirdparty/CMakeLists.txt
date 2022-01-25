@@ -31,7 +31,7 @@ if (WITH_KMTRICKS)
     KMTRICKS
     PREFIX KMTRICKS
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
-    CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}" "-DSTATIC=${STATIC}"
+    CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}"
     INSTALL_COMMAND ""
     LOG_CONFIGURE ON
     LOG_BUILD ON
@@ -41,7 +41,7 @@ else()
     KMTRICKS
     PREFIX KMTRICKS
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
-    CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}" "-DSTATIC=${STATIC}"
+    CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}"
     INSTALL_COMMAND ""
     BUILD_COMMAND ""
     LOG_CONFIGURE ON
@@ -63,6 +63,10 @@ ExternalProject_Add(
   LOG_CONFIGURE ON
   LOG_BUILD ON
 )
+target_include_directories(tests SYSTEM INTERFACE ${THIRD_DIR}/googletest/googletest/include)
+target_link_directories(tests INTERFACE ${THIRD_BINDIR}/GOOGLE_TEST/src/GOOGLE_TEST-build/lib)
+target_link_libraries(tests INTERFACE gtest gtest_main pthread)
+add_dependencies(deps GOOGLE_TEST)
 
 ExternalProject_Add(
   SPDLOG
@@ -148,7 +152,7 @@ target_include_directories(headers INTERFACE ${THIRD_DIR}/indicators/include)
 if (WITH_POPSTRAT)
   ExternalProject_Add(HAWK
     PREFIX HAWK
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/hawk
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/hawk
     CMAKE_ARGS -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
     INSTALL_COMMAND ""
     LOG_CONFIGURE ON
