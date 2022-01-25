@@ -1,4 +1,4 @@
-{% set version = "0.1" %}
+{% set version = "0.0.1" %}
 
 package:
   name: kmdiff
@@ -14,7 +14,7 @@ requirements:
     - cmake
     - gsl
     - openblas
-    - lapack
+    - liblapacke
 
   host:
     - zlib
@@ -23,13 +23,8 @@ requirements:
     - zlib
     - gsl
     - openblas
-    - lapack
-    - kmtricks>=0.0.6
-    - python>=3.6
-    - bbmap>=38.90
-    - samtools>=1.12
-    - bedtools>=2.30
-    - abyss>=2.3.1
+    - liblapacke
+    - kmtricks
 
 about:
   home: https://github.com/tlemane/kmdiff
