@@ -7,7 +7,8 @@ set(TEST_FILES
   "kff_test.cpp"
   "factorial_test.cpp"
   "model_test.cpp"
-  "utils_test.cpp")
+  "utils_test.cpp"
+  "merge_test.cpp")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/tests)
 add_executable(${PROJECT_NAME}-tests ${TEST_FILES})

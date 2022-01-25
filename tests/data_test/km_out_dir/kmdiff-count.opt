@@ -1,0 +1,1 @@
+Options: verbosity=info,nb_threads=8,file=fof.txt,dir=km_out_dir,kmer_size=20,abundance_min=1,recurrence_min=1,memory=0,minimizer_type=0,minimizer_size=10,repartition_type=0,nb_partitions=0,
