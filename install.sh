@@ -2,10 +2,10 @@
 
 function kmdiff_build ()
 {
-  OPT="-DCMAKE_BUILD_TYPE=${1} -DKMER_LIST=\"${2}\" -DMAX_C=${3} -DWITH_POPSTRAT=${4}"
-  echo "Options: ${OPT} ${6}"
+  OPT="-DCMAKE_BUILD_TYPE=${1} -DKMER_LIST=\"${2}\" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}"
+  echo "Options: ${OPT} j=${6}"
 
-  mkdir kmdiff_build
+  [[ -d "kmdiff_build" ]] || mkdir kmdiff_build
   cd kmdiff_build
 
   if [ "$(uname)" == "Darwin" ]; then
@@ -13,11 +13,13 @@ function kmdiff_build ()
   fi
   cmake_cmd="cmake .. ${OPT}"
 
+  [[ ${8} == 1 ]] && rm CMakeCache.txt
+
   eval ${cmake_cmd}
 
   make -j${6}
 
-  if [[ ${7} == 2 ]]; then
+  if [[ ${7} == 1 ]]; then
     ctest --verbose
   fi
 }
@@ -43,7 +45,7 @@ function kmdiff_build_conda ()
   OPT="-DCMAKE_BUILD_TYPE=${1} -DKMER_LIST=\"${2}\" -DMAX_C=${3} -DWITH_POPSTRAT=${4}"
   echo "Options: ${OPT} ${6}"
 
-  mkdir kmdiff_build
+  [[ -d "kmdiff_build" ]] || mkdir kmdiff_build
   cd kmdiff_build
 
   cmake .. "-DCMAKE_PREFIX_PATH=./kmdiff_conda/ ${OPT}"
@@ -59,7 +61,7 @@ function usage ()
 {
   echo "kmdiff build script."
   echo "Usage: "
-  echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-s int] [-p] [-e] [-h]"
+  echo "  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-s int] [-p] [-e] [-d] [-h]"
   echo "Options: "
   echo "  -r <Release|Debug> -> build type {Release}."
   echo "  -k <LIST[INT]>     -> k-mer size {\"32 64 96 128\"}."
@@ -70,6 +72,7 @@ function usage ()
   echo "                        (-s 1 requires GSL + lapacke + OpenBLAS)"
   echo "  -p                 -> compile with plugins support {disabled}"
   echo "  -e                 -> use conda to install compilers/dependencies {disabled}"
+  echo "  -d                 -> delete cmake cache {disabled}"
   echo "  -h                 -> show help."
   exit 1
 }
@@ -87,8 +90,9 @@ jopt=8
 pop="ON"
 plugin="OFF"
 conda=0
+cmake_cache=0
 
-while getopts "r:k:t:c:j:s:eph" option; do
+while getopts "r:k:t:c:j:s:epdh" option; do
   case "$option" in
     r)
       mode=${OPTARG}
@@ -124,6 +128,9 @@ while getopts "r:k:t:c:j:s:eph" option; do
     e)
       conda=1
       ;;
+    d)
+      cmake_cache=1
+      ;;
     *)
       usage
       ;;
@@ -136,8 +143,8 @@ if [[ ${conda} -eq 1 ]]; then
   conda_install_path=$(conda info | grep -i 'base environment')
   conda_install_path=$(echo ${conda_install_path} | cut -d' ' -f4)
   source ${conda_install_path}/etc/profile.d/conda.sh
-  kmdiff_build_conda ${mode} "${ks}" ${count} ${pop} ${test_str} ${jopt} ${tests_run}
+  kmdiff_build_conda ${mode} "${ks}" ${count} ${pop} ${tests_str} ${jopt} ${tests_run} ${cmake_cache}
 else
-  kmdiff_build ${mode} "${ks}" ${count} ${pop} ${test_str} ${jopt} ${tests_run}
+  kmdiff_build ${mode} "${ks}" ${count} ${pop} ${tests_str} ${jopt} ${tests_run} ${cmake_cache}
 fi
 

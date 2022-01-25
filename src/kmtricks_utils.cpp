@@ -26,108 +26,120 @@
 
 namespace kmdiff {
 
-kmtricks_config_t get_kmtricks_config(const std::string& run_dir)
-{
-  kmtricks_config_t config;
-
-  const std::string config_path = fmt::format("{}/kmdiff-count.opt", run_dir);
-
-  std::ifstream in_config(config_path, std::ios::in);
-  for (std::string line; std::getline(in_config, line);)
+  kmtricks_config_t get_kmtricks_config(const std::string& run_dir)
   {
-    if (bc::utils::contains(line, "kmer_size"))
+    kmtricks_config_t config;
+
+    const std::string config_path = fmt::format("{}/kmdiff-count.opt", run_dir);
+
+    std::ifstream in_config(config_path, std::ios::in);
+    for (std::string line; std::getline(in_config, line);)
     {
-      for (auto&& o : bc::utils::split(line, ','))
+      if (bc::utils::contains(line, "kmer_size"))
       {
-        if (bc::utils::contains(o, "kmer_size"))
-          config.kmer_size = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
-        if (bc::utils::contains(o, "abundance_min"))
-          config.abundance_min = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
+        for (auto&& o : bc::utils::split(line, ','))
+        {
+          if (bc::utils::contains(o, "kmer_size"))
+            config.kmer_size = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
+          if (bc::utils::contains(o, "abundance_min"))
+            config.abundance_min = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
+        }
       }
     }
-  }
 
-  std::size_t np = 0;
-  for (auto& _ : fs::directory_iterator(fmt::format("{}/counts", run_dir)))
-  {
-    np++; unused(_);
-  }
-  config.nb_partitions = np;
-
-  if (!config.kmer_size || !config.nb_partitions)
-    throw ConfigError(fmt::format("Unable to load config from {}.", config_path));
-
-  return config;
-}
-
-
-km::Fof get_fofs(const std::string& run_dir)
-{
-  std::string fof_path = fmt::format("{}/kmtricks.fof", run_dir);
-  return km::Fof(fof_path);
-}
-
-std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
-  const std::string& run_dir,
-  size_t nb_controls,
-  size_t nb_cases,
-  size_t abundance_min)
-{
-  auto fof = get_fofs(run_dir);
-  std::vector<size_t> total_controls(nb_controls);
-  std::vector<size_t> total_cases(nb_cases);
-
-  auto fof_it = fof.begin();
-
-  for (std::size_t i = 0; i < total_controls.size(); i++)
-  {
-    std::string fid = fof.get_id(i);
-    std::string hpath = km::KmDir::get().get_hist_path(fid);
-    km::HistReader hr(hpath);
-
-    auto hist = hr.get();
-    auto info = hr.infos();
-    auto& v = hist->get_vec();
-
-    std::size_t ab_min = std::get<2>(*fof_it); fof_it++;
-    if (ab_min == 0)
-      ab_min = abundance_min;
-
-    total_controls[i] = info.total;
-
-    for (std::size_t j=1; j<ab_min; j++)
+    std::size_t np = 0;
+    for (auto& _ : fs::directory_iterator(fmt::format("{}/counts", run_dir)))
     {
-      total_controls[i] -= (j) * v[j-1];
+      np++; unused(_);
+    }
+    config.nb_partitions = np;
+
+    if (!config.kmer_size || !config.nb_partitions)
+      throw ConfigError(fmt::format("Unable to load config from {}.", config_path));
+
+    return config;
+  }
+
+
+  km::Fof get_fofs(const std::string& run_dir)
+  {
+    std::string fof_path = fmt::format("{}/kmtricks.fof", run_dir);
+    return km::Fof(fof_path);
+  }
+
+  std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
+    const std::string& run_dir,
+    size_t nb_controls,
+    size_t nb_cases,
+    size_t abundance_min)
+  {
+    auto fof = get_fofs(run_dir);
+    std::vector<size_t> total_controls(nb_controls);
+    std::vector<size_t> total_cases(nb_cases);
+
+    auto fof_it = fof.begin();
+
+    for (std::size_t i = 0; i < total_controls.size(); i++)
+    {
+      std::string fid = fof.get_id(i);
+      std::string hpath = km::KmDir::get().get_hist_path(fid);
+      km::HistReader hr(hpath);
+
+      auto hist = hr.get();
+      auto info = hr.infos();
+      auto& v = hist->get_vec();
+
+      std::size_t ab_min = std::get<2>(*fof_it); fof_it++;
+      if (ab_min == 0)
+        ab_min = abundance_min;
+
+      total_controls[i] = info.total;
+
+      for (std::size_t j=1; j<ab_min; j++)
+      {
+        total_controls[i] -= (j) * v[j-1];
+      }
+
+      spdlog::debug("{}: {} k-mers", fid, total_controls[i]);
     }
 
-    spdlog::debug("{}: {} k-mers", fid, total_controls[i]);
-  }
-
-  for (std::size_t i = nb_controls; i < nb_controls + nb_cases; i++)
-  {
-    std::string fid = fof.get_id(i);
-    std::string hpath = km::KmDir::get().get_hist_path(fid);
-    km::HistReader hr(hpath);
-
-    auto hist = hr.get();
-    auto info = hr.infos();
-    auto& v = hist->get_vec();
-
-    std::size_t ab_min = std::get<2>(*fof_it); fof_it++;
-    if (ab_min == 0)
-      ab_min = abundance_min;
-
-    total_cases[i - nb_controls] = info.total;
-
-    for (std::size_t j=1; j<ab_min; j++)
+    for (std::size_t i = nb_controls; i < nb_controls + nb_cases; i++)
     {
-      total_cases[i - nb_controls] -= (j) * v[j-1];
+      std::string fid = fof.get_id(i);
+      std::string hpath = km::KmDir::get().get_hist_path(fid);
+      km::HistReader hr(hpath);
+
+      auto hist = hr.get();
+      auto info = hr.infos();
+      auto& v = hist->get_vec();
+
+      std::size_t ab_min = std::get<2>(*fof_it); fof_it++;
+      if (ab_min == 0)
+        ab_min = abundance_min;
+
+      total_cases[i - nb_controls] = info.total;
+
+      for (std::size_t j=1; j<ab_min; j++)
+      {
+        total_cases[i - nb_controls] -= (j) * v[j-1];
+      }
+
+      spdlog::debug("{}: {} k-mers", fid, total_cases[i - nb_controls]);
     }
 
-    spdlog::debug("{}: {} k-mers", fid, total_cases[i - nb_controls]);
+    return std::make_tuple(std::move(total_controls), std::move(total_cases));
   }
 
-  return std::make_tuple(std::move(total_controls), std::move(total_cases));
-}
+
+  part_paths_t get_partition_paths(const std::string& kmdir, std::size_t nb_parts)
+  {
+    km::KmDir::get().init(kmdir, fmt::format("{}/kmtricks.fof", kmdir));
+    part_paths_t part_paths;
+    for (std::size_t i = 0; i < nb_parts; i++)
+    {
+      part_paths.push_back(km::KmDir::get().get_files_to_merge(i, true, km::KM_FILE::KMER));
+    }
+    return part_paths;
+  }
 
 } // end of namespace kmdiff

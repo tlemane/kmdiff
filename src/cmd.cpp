@@ -33,7 +33,7 @@ namespace kmdiff {
 
     std::string kmtricks_args =
         "pipeline --file {} --run-dir {} --kmer-size {} --hard-min {} "
-        "--threads {} --minimizer-type {} --mode kmer:count:bin --recurrence-min {}"
+        "--threads {} --minimizer-type {} --mode kmer:count:bin --recurrence-min {} "
         "--minimizer-size {} --repartition-type {} --nb-partitions {} --cpr --until count --hist";
 
     std::string fmt_args = fmt::format(
