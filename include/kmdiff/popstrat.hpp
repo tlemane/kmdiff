@@ -49,7 +49,9 @@ namespace kmdiff {
 
   void run_eigenstrat_smartpca(const std::string& popstrat_dir,
                                const std::string& parfile,
-                               const std::string& log, bool is_diploid);
+                               const std::string& log,
+                               bool is_diploid,
+                               std::size_t n);
   template<size_t MAX_C>
   class EigGenoFile
   {
@@ -174,9 +176,9 @@ namespace kmdiff {
                  std::vector<acc_t<KmerSign<KSIZE>>>& pop_accumulators,
                  std::size_t nb_threads)
       {
-        ThreadPool pool(nb_threads);
-
         const auto size = accumulators.size();
+
+        ThreadPool pool(nb_threads > size ? size : nb_threads);
 
         std::exception_ptr ep = nullptr;
 

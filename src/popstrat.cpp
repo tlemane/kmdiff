@@ -55,7 +55,9 @@ namespace kmdiff {
 
   void run_eigenstrat_smartpca(const std::string& popstrat_dir,
                                const std::string& parfile,
-                               const std::string& log, bool is_diploid)
+                               const std::string& log,
+                               bool is_diploid,
+                               std::size_t n)
   {
     std::string cpath = fs::current_path();
     fs::current_path(popstrat_dir);
@@ -63,7 +65,7 @@ namespace kmdiff {
     if (is_diploid)
       exec_external_cmd(smartpca_bin, fmt::format("-p {}", parfile), log);
     else
-      exec_external_cmd(smartpca_bin, fmt::format("-V p {}", parfile), log);
+      exec_external_cmd(smartpca_bin, fmt::format("-V -p {}", parfile), log);
 
     if (!fs::exists(fmt::format(parfile_map.at("evecoutname"), popstrat_dir)))
       throw EigenStratError("eigenstrat/smartpca failed.");
@@ -72,7 +74,7 @@ namespace kmdiff {
     std::string pca_file = "gwas_eigenstrat.pca";
     std::string pcs_file = "pcs.evec";
     exec_external_cmd(evec_bin, fmt::format("{} {} {} {}",
-                                            10,
+                                            n < 10 ? n : 10,
                                             parfile_map.at("evecoutname"),
                                             parfile_map.at("indivname"),
                                             "gwas_eigenstrat.pca").c_str());
