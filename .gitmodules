@@ -31,3 +31,6 @@
 [submodule "thirdparty/indicators"]
 	path = thirdparty/indicators
 	url = https://github.com/p-ranav/indicators
+[submodule "thirdparty/eigen"]
+	path = thirdparty/eigen
+	url = https://gitlab.com/libeigen/eigen
