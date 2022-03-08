@@ -221,8 +221,8 @@ namespace kmdiff {
         ->setter_c(corr_setter);
 
     auto correction_warn = [cp](){
-      if (cp->value() == "benjamini")
-        spdlog::warn("-c/--correction benjamini: all significants k-mers will live in memory.");
+      if (cp->value() == "benjamini" || cp->value() == "holm")
+        spdlog::warn(fmt::format("-c/--correction {}: all significants k-mers will live in memory.", cp->value()));
     };
 
     cp->callback(correction_warn);

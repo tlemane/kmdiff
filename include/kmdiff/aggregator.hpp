@@ -340,5 +340,30 @@ namespace kmdiff {
       spinlock m_lock{};
   };
 
+  template<std::size_t KSIZE>
+  std::unique_ptr<IAggregator<KSIZE>> make_aggregator(
+      std::vector<acc_t<KmerSign<KSIZE>>>& accs,
+      std::shared_ptr<ICorrector> corrector,
+      kmtricks_config_t config,
+      const std::string& out,
+      bool kff,
+      std::size_t threads,
+      pb_t pb)
+  {
+    switch (corrector->type())
+    {
+      case CorrectionType::NOTHING:
+      case CorrectionType::BONFERRONI:
+      case CorrectionType::SIDAK:
+        return std::make_unique<aggregator<KSIZE>>(accs, corrector, config, out, kff, threads, pb);
+      case CorrectionType::BENJAMINI:
+      case CorrectionType::HOLM:
+        return std::make_unique<sorted_aggregator<KSIZE>>(accs, corrector, config, out, kff, threads, pb);
+      default:
+        return nullptr;
+    }
+  }
+
+
 } // end of namespace kmdiff
 

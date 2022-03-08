@@ -180,7 +180,8 @@ namespace kmdiff {
         write_gwas_eigenstrat_total(gwas_eigenstratX_total, total_controls, total_cases);
 
         std::string log_eigenstrat = "eigenstrat.log";
-        run_eigenstrat_smartpca(pop_dir, "parfile.txt", log_eigenstrat, opt->is_diploid);
+        run_eigenstrat_smartpca(
+            pop_dir, "parfile.txt", log_eigenstrat, opt->is_diploid, opt->nb_controls + opt->nb_cases);
 
         spdlog::info("PCA done. ({}).", pca_time.formatted());
 
@@ -221,9 +222,6 @@ namespace kmdiff {
 
     Timer agg_time;
 
-    std::shared_ptr<ICorrector> corrector {nullptr};
-    std::unique_ptr<IAggregator<KSIZE>> agg {nullptr};
-
     if (opt->correction == CorrectionType::NOTHING)
       spdlog::info("Aggregate partitions...");
     else
@@ -237,49 +235,9 @@ namespace kmdiff {
       pb->print_progress();
     }
 
-    if (opt->correction != CorrectionType::BENJAMINI && opt->correction != CorrectionType::HOLM)
-    {
-      if (opt->correction == CorrectionType::BONFERRONI)
-      {
-        corrector = std::make_shared<bonferroni>(opt->threshold, total_kmers);
-      }
-      else if (opt->correction == CorrectionType::SIDAK)
-      {
-        corrector = std::make_shared<sidak>(opt->threshold, total_kmers);
-      }
-      else
-      {
-        corrector = std::make_shared<basic_threshold>(opt->threshold);
-      }
-      agg = std::make_unique<aggregator<KSIZE>>(accumulators,
-                                                corrector,
-                                                config,
-                                                opt->output_directory,
-                                                opt->kff,
-                                                opt->nb_threads,
-                                                pb);
-
-    }
-    else
-    {
-      if (opt->correction == CorrectionType::BENJAMINI)
-      {
-        corrector = std::make_shared<benjamini>(opt->threshold, total_kmers);
-      }
-      else if (opt->correction == CorrectionType::HOLM)
-      {
-        corrector = std::make_shared<holm>(opt->threshold, total_kmers);
-      }
-      agg = std::make_unique<sorted_aggregator<KSIZE>>(accumulators,
-                                                       corrector,
-                                                       config,
-                                                       opt->output_directory,
-                                                       opt->kff,
-                                                       opt->nb_threads,
-                                                       pb);
-
-
-    }
+    auto corrector = make_corrector(opt->correction, opt->threshold, total_kmers);
+    auto agg = make_aggregator<KSIZE>(
+        accumulators, corrector, config, opt->output_directory, opt->kff, opt->nb_threads, pb);
 
     agg->run();
 

@@ -98,5 +98,22 @@ namespace kmdiff {
     return "threshold";
   }
 
+  std::shared_ptr<ICorrector> make_corrector(CorrectionType type, double threshold, std::size_t kmers)
+  {
+    switch (type)
+    {
+      case CorrectionType::BONFERRONI:
+        return std::make_shared<bonferroni>(threshold, kmers);
+      case CorrectionType::SIDAK:
+        return std::make_shared<sidak>(threshold, kmers);
+      case CorrectionType::BENJAMINI:
+        return std::make_shared<benjamini>(threshold, kmers);
+      case CorrectionType::HOLM:
+        return std::make_shared<holm>(threshold, kmers);
+      default:
+        return std::make_shared<basic_threshold>(threshold);
+    }
+  }
+
 } // end of namespace kmdiff
 

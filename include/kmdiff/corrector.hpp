@@ -68,5 +68,7 @@ namespace kmdiff {
       double m_threshold {0};
   };
 
+  std::shared_ptr<ICorrector> make_corrector(CorrectionType type, double threshold, std::size_t kmers);
+
 } // end of namespace kmdiff
 
