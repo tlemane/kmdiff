@@ -104,6 +104,7 @@ while getopts "r:k:t:c:j:s:epdh" option; do
       tests=${OPTARG}
       [[ ${tests} == 0 ]] || [[ ${tests} == 1 ]] || [[ ${tests} == 2 ]] || usage
       [[ ${tests} == 0 ]] && tests_str="OFF"
+      [[ ${tests} == 0 ]] && tests_run=0
       [[ ${tests} == 1 ]] && tests_run=0
       ;;
     c)
