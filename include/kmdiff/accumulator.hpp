@@ -163,6 +163,8 @@ namespace kmdiff {
     FileAccumulator(const std::string& path, size_t k_size = 0) : m_path(path), m_kmer_size(k_size)
     {
       m_out_stream = std::make_shared<out_stream_t>(m_path);
+      m_cout_stream = std::make_shared<cpr_out_stream_t>(*m_out_stream);
+
       if constexpr(is_same_template_v<T, km::Kmer<32>>)
         m_tmp.set_k(m_kmer_size);
     }
@@ -172,20 +174,22 @@ namespace kmdiff {
       m_size++;
       if constexpr (has_dump<T>::value)
       {
-        e.dump(m_out_stream);
+        e.dump(m_cout_stream);
       }
        else
       {
         m_tmp = e;
-        m_out_stream->write(reinterpret_cast<char*>(&m_tmp), sizeof(e));
+        m_cout_stream->write(reinterpret_cast<char*>(&m_tmp), sizeof(e));
       }
     }
 
     void finish() override
     {
+      m_cout_stream.reset();
       m_out_stream->close();
       m_out_stream.reset();
       m_in_stream = std::make_shared<in_stream_t>(m_path);
+      m_cin_stream = std::make_shared<cpr_in_stream_t>(*m_in_stream);
     }
 
     std::optional<T>& get() override
@@ -198,12 +202,12 @@ namespace kmdiff {
 
       if constexpr (has_load<T>::value)
       {
-        m_tmp.load(m_in_stream, m_kmer_size);
+        m_tmp.load(m_cin_stream, m_kmer_size);
         this->m_opt = m_tmp;
       }
       else
       {
-        m_in_stream->read(reinterpret_cast<char*>(&m_tmp), sizeof(m_tmp));
+        m_cin_stream->read(reinterpret_cast<char*>(&m_tmp), sizeof(m_tmp));
         this->m_opt = m_tmp;
       }
       m_read++;
@@ -217,7 +221,9 @@ namespace kmdiff {
 
     void destroy() override
     {
+      m_cin_stream.reset();
       m_in_stream->close();
+      m_in_stream.reset();
       fs::remove(m_path);
     }
 
@@ -229,6 +235,8 @@ namespace kmdiff {
     size_t m_kmer_size{0};
     std::shared_ptr<out_stream_t> m_out_stream{nullptr};
     std::shared_ptr<in_stream_t> m_in_stream{nullptr};
+    std::shared_ptr<cpr_out_stream_t> m_cout_stream{nullptr};
+    std::shared_ptr<cpr_in_stream_t> m_cin_stream{nullptr};
   };
 
 }  // end of namespace kmdiff
