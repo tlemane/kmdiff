@@ -163,7 +163,7 @@ namespace kmdiff {
     FileAccumulator(const std::string& path, size_t k_size = 0, bool read = false)
       : m_path(path), m_kmer_size(k_size), m_reading(read)
     {
-      if (m_reading)
+      if (!m_reading)
       {
         m_out_stream = std::make_shared<out_stream_t>(m_path);
         m_cout_stream = std::make_shared<cpr_out_stream_t>(*m_out_stream);
