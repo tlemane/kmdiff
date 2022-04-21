@@ -187,6 +187,7 @@ namespace kmdiff {
         if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
         {
           pb = get_progress_bar("progress", size, 50, indicators::Color::white, false);
+          pb->set_progress(0);
           pb->print_progress();
         }
 
@@ -238,7 +239,7 @@ namespace kmdiff {
         }
 
         #ifdef KMD_USE_IRLS
-          auto [model, singular, nan, error, iter] = glm_newton_irls(
+          auto [model, singular, nan, error, iter] = glm_irls(
             local_features, m_Y, s_max_iter);
         #else
           auto [model, singular, nan, error, iter] = glm_newton_raphson(

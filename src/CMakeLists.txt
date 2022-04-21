@@ -20,6 +20,8 @@ add_executable(${PROJECT_NAME}-bin main.cc)
 target_link_libraries(${PROJECT_NAME}-bin PRIVATE ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME kmdiff)
 
+add_compile_definitions(KMD_USE_IRLS)
+
 if(DEV_BUILD)
   add_compile_definitions(KMD_DEV_MODE)
 endif()
