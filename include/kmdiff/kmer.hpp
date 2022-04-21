@@ -85,20 +85,29 @@ namespace kmdiff {
       return m_kmer.to_string();
     }
 
-    void load(std::shared_ptr<std::istream> stream, size_t size)
+    bool load(std::shared_ptr<std::istream> stream, size_t size)
     {
       m_kmer.load(*stream);
       stream->read(reinterpret_cast<char*>(&m_pvalue), sizeof(m_pvalue));
+
+      if (__builtin_expect(!stream->gcount(), 0))
+      {
+        return false;
+      }
+
       stream->read(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
       stream->read(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
       stream->read(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
-  #ifdef WITH_POPSTRAT
-      std::uint16_t size_ = 0;
-      stream->read(reinterpret_cast<char*>(&size_), sizeof(size_));
-      m_counts_ratio.resize(size_, 0);
-      stream->read(reinterpret_cast<char*>(m_counts_ratio.data()),
-                   size_*sizeof(double));
-  #endif
+
+      #ifdef WITH_POPSTRAT
+        std::uint16_t size_ = 0;
+        stream->read(reinterpret_cast<char*>(&size_), sizeof(size_));
+        m_counts_ratio.resize(size_, 0);
+        stream->read(reinterpret_cast<char*>(m_counts_ratio.data()),
+                     size_*sizeof(double));
+      #endif
+
+      return true;
     }
 
     void dump(std::shared_ptr<std::ostream> stream)
@@ -108,12 +117,18 @@ namespace kmdiff {
       stream->write(reinterpret_cast<char*>(&m_sign), sizeof(m_sign));
       stream->write(reinterpret_cast<char*>(&m_mean_control), sizeof(m_mean_control));
       stream->write(reinterpret_cast<char*>(&m_mean_case), sizeof(m_mean_case));
-  #ifdef WITH_POPSTRAT
-      std::uint16_t size = m_counts_ratio.size();
-      stream->write(reinterpret_cast<char*>(&size), sizeof(size));
-      stream->write(reinterpret_cast<char*>(m_counts_ratio.data()),
-                   size*sizeof(double));
-  #endif
+
+      #ifdef WITH_POPSTRAT
+        std::uint16_t size = m_counts_ratio.size();
+        stream->write(reinterpret_cast<char*>(&size), sizeof(size));
+        stream->write(reinterpret_cast<char*>(m_counts_ratio.data()),
+                      size*sizeof(double));
+      #endif
+    }
+
+    void set_k(std::size_t ksize)
+    {
+      m_kmer.set_k(ksize);
     }
 
     bool operator==(const KmerSign<MAX_K>& rhs) const { return m_kmer == rhs.m_kmer; }
@@ -122,9 +137,11 @@ namespace kmdiff {
     km::Kmer<MAX_K> m_kmer;
     double m_pvalue{0};
     Significance m_sign{Significance::NO};
-  #ifdef WITH_POPSTRAT
-    std::vector<double> m_counts_ratio;
-  #endif
+
+    #ifdef WITH_POPSTRAT
+      std::vector<double> m_counts_ratio;
+    #endif
+
     double m_mean_control;
     double m_mean_case;
   };

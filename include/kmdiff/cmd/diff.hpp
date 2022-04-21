@@ -85,7 +85,7 @@ namespace kmdiff {
       else
       {
         accumulators[i] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
-          fmt::format("{}/acc_{}", output_part_dir, i), config.kmer_size);
+          fmt::format("{}/p{}_uncorrected", output_part_dir, i), config.kmer_size);
       }
     }
 
