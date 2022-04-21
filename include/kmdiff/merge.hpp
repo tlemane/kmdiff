@@ -213,6 +213,7 @@ namespace kmdiff {
         if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
         {
           pb = get_progress_bar("progress", size, 50, indicators::Color::white, false);
+          pb->set_progress(0);
           pb->print_progress();
         }
 
