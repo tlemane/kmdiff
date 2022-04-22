@@ -29,6 +29,8 @@
 
 #include <kmtricks/io/lz4_stream.hpp>
 
+#include <spdlog/spdlog.h>
+
 namespace kmdiff {
 
   template <typename T>
@@ -36,6 +38,10 @@ namespace kmdiff {
   {
    public:
     IAccumulator() {}
+
+    virtual ~IAccumulator()
+    {
+    }
 
     virtual void push(T&& e) = 0;
     virtual size_t size() const = 0;
@@ -160,8 +166,8 @@ namespace kmdiff {
     using cpr_in_stream_t = lz4_stream::basic_istream<8192>;
 
    public:
-    FileAccumulator(const std::string& path, size_t k_size = 0, bool read = false)
-      : m_path(path), m_kmer_size(k_size), m_reading(read)
+    FileAccumulator(const std::string& path, size_t k_size = 0, bool read = false, bool del = false)
+      : m_path(path), m_kmer_size(k_size), m_reading(read), m_del(del)
     {
       if (!m_reading)
       {
@@ -244,10 +250,24 @@ namespace kmdiff {
 
     void destroy() override
     {
-      m_cin_stream.reset();
-      m_in_stream->close();
-      m_in_stream.reset();
-      fs::remove(m_path);
+      if (m_cin_stream)
+        m_cin_stream.reset();
+
+      if (m_in_stream)
+      {
+        m_in_stream->close();
+        m_in_stream.reset();
+      }
+
+      if (m_del)
+      {
+        fs::remove(m_path);
+      }
+    }
+
+    ~FileAccumulator() override
+    {
+      destroy();
     }
 
    private:
@@ -257,11 +277,14 @@ namespace kmdiff {
     std::string m_path;
     size_t m_kmer_size{0};
     bool m_reading{false};
+    bool m_del{false};
     std::shared_ptr<out_stream_t> m_out_stream{nullptr};
     std::shared_ptr<in_stream_t> m_in_stream{nullptr};
     std::shared_ptr<cpr_out_stream_t> m_cout_stream{nullptr};
     std::shared_ptr<cpr_in_stream_t> m_cin_stream{nullptr};
   };
+
+  bool partitions_exist(const std::string& prefix, size_t nb_partitions, const std::string& dir);
 
 }  // end of namespace kmdiff
 

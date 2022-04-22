@@ -183,9 +183,9 @@ namespace kmdiff {
       catch (...) { return std::make_tuple(false, fmt::format("{} {}: Not a number!", p, v)); }
 
       bool in = true;
-      if (vd < 0.0 || vd > 0.05)
+      if (vd < 0.0 || vd > 0.5)
         in = false;
-      return std::make_tuple(in, fmt::format("Not in range [0.0, 0.05]"));
+      return std::make_tuple(in, fmt::format("Not in range [0.0, 0.5]"));
     };
 
     diff_cmd->add_param("-s/--significance", "significance threshold.")
@@ -243,6 +243,10 @@ namespace kmdiff {
         ->as_flag()
         ->setter(options->cpr)
         ->hide();
+
+    diff_cmd->add_param("--keep-tmp", "keep tmp files.")
+        ->as_flag()
+        ->setter(options->keep_tmp);
 
     #ifdef WITH_PLUGIN
       diff_cmd->add_group("custom model", "");

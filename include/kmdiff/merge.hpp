@@ -70,7 +70,7 @@ namespace kmdiff {
 
         auto [p_value, sign, mean_ctr, mean_case] = m_model->process(range_controls, range_cases);
 
-        spdlog::debug("P{}: {} {} {} {}", m_part, p_value, significance_to_char(sign), mean_ctr, mean_case);
+        //spdlog::debug("P{}: {} {} {} {}", m_part, p_value, significance_to_char(sign), mean_ctr, mean_case);
         m_total++;
 
         if (p_value <= m_threshold)
@@ -140,7 +140,7 @@ namespace kmdiff {
         m_sampler->sample(range_controls, range_cases);
 
         auto [p_value, sign, mean_ctr, mean_case] = this->m_model->process(range_controls, range_cases);
-        spdlog::debug("P{}: {} {} {} {}", this->m_part, p_value, significance_to_char(sign), mean_ctr, mean_case);
+        //spdlog::debug("P{}: {} {} {} {}", this->m_part, p_value, significance_to_char(sign), mean_ctr, mean_case);
 
         this->m_total++;
 

@@ -1,5 +1,5 @@
 #include <kmdiff/corrector.hpp>
-#include <spdlog/spdlog.h>
+#include <cmath>
 
 namespace kmdiff {
 

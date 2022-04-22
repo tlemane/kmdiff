@@ -159,6 +159,24 @@ namespace kmdiff {
       static constexpr char s_f = 'F';
       static constexpr char s_u = 'U';
 
+      static void set_params(std::size_t max_iter,
+                        double learn_rate,
+                        double epsilon,
+                        bool stand,
+                        bool irls)
+      {
+        if (learn_rate)
+          pop_strat_corrector::s_learn_rate = learn_rate;
+        if (max_iter)
+          pop_strat_corrector::s_max_iter = max_iter;
+        if (epsilon)
+          pop_strat_corrector::s_epsilon = epsilon;
+        if (stand)
+          pop_strat_corrector::s_stand = stand;
+        if (irls)
+          pop_strat_corrector::s_irls = irls;
+      }
+
     public:
       pop_strat_corrector(std::size_t nb_controls, std::size_t nb_cases,
                           const vector_ull_t& control_totals,
@@ -199,7 +217,7 @@ namespace kmdiff {
             {
               while (auto& oks = acc->get())
               {
-                spdlog::debug(oks.value().to_string());
+                //spdlog::debug(oks.value().to_string());
 
                 this->apply(oks.value());
                 auto coks = oks.value();
@@ -309,7 +327,7 @@ namespace kmdiff {
 
         auto corrected = alglib::chisquarecdistribution(1, log_likelihood_ratio);
 
-        spdlog::debug("{} {} {} {}", ks.to_string(), ks.m_pvalue, corrected, significance_to_char(ks.m_sign));
+        //spdlog::debug("{} {} {} {}", ks.to_string(), ks.m_pvalue, corrected, significance_to_char(ks.m_sign));
 
         ks.set_pval(corrected);
       }

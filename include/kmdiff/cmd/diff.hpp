@@ -50,43 +50,24 @@
 namespace kmdiff {
 
   template<std::size_t KSIZE>
-  void main_diff(kmdiff_options_t options)
+  std::size_t do_diff(diff_options_t opt,
+               const kmtricks_config_t& config,
+               const std::string& output_part_dir,
+               std::vector<acc_t<KmerSign<KSIZE>>>& accumulators,
+               std::shared_ptr<Sampler<DMAX_C>> sampler)
   {
-    diff_options_t opt = std::static_pointer_cast<struct diff_options>(options);
-    spdlog::debug(opt->display());
-
-    #ifdef WITH_PLUGIN
-      if (!opt->model_lib_path.empty())
-        plugin_manager<IModel<DMAX_C>>::get().init(opt->model_lib_path, opt->model_config);
-    #endif
-
-    Timer whole_time;
-    kmtricks_config_t config = get_kmtricks_config(opt->kmtricks_dir);
-
-    std::string output_part_dir = fmt::format("{}/partitions", opt->output_directory);
-    fs::create_directories(output_part_dir);
-
-    spdlog::info("Process partitions...");
     Timer merge_time;
 
-    km::KmDir::get().init(opt->kmtricks_dir, fmt::format("{}/kmtricks.fof", opt->kmtricks_dir));
+    spdlog::info("Process partitions");
 
     std::vector<std::vector<std::string>> part_paths;
     for (std::size_t i = 0; i < config.nb_partitions; i++)
       part_paths.push_back(km::KmDir::get().get_files_to_merge(i, true, km::KM_FILE::KMER));
 
-    std::vector<acc_t<KmerSign<KSIZE>>> accumulators(config.nb_partitions);
     for (std::size_t i = 0; i < accumulators.size(); i++)
     {
-      if (opt->in_memory)
-      {
-        accumulators[i] = std::make_shared<VectorAccumulator<KmerSign<KSIZE>>>(65536);
-      }
-      else
-      {
-        accumulators[i] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
-          fmt::format("{}/p{}_uncorrected", output_part_dir, i), config.kmer_size);
-      }
+      accumulators[i] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+        fmt::format("{}/p{}_uncorrected", output_part_dir, i), config.kmer_size, false, !opt->keep_tmp);
     }
 
     std::vector<std::uint32_t> ab_mins(opt->nb_controls + opt->nb_cases, 1);
@@ -117,23 +98,6 @@ namespace kmdiff {
       }
     #endif
 
-    std::string pop_dir = fmt::format("{}/popstrat", opt->output_directory);
-    fs::create_directory(pop_dir);
-
-    std::string gwas_eigenstratX_geno = fmt::format("{}/gwas_eigenstratX.geno", pop_dir);
-    std::string gwas_eigenstratX_snp = fmt::format("{}/gwas_eigenstratX.snp", pop_dir);
-
-    eig_geno_t<DMAX_C> geno {nullptr};
-    eig_snp_t snp {nullptr};
-    std::shared_ptr<Sampler<DMAX_C>> sampler {nullptr};
-
-    if (opt->pop_correction)
-    {
-      geno = std::make_shared<EigGenoFile<DMAX_C>>(gwas_eigenstratX_geno);
-      snp = std::make_shared<EigSnpFile>(gwas_eigenstratX_snp);
-      sampler = std::make_shared<Sampler<DMAX_C>>(geno, snp, opt->kmer_pca, opt->seed);
-    }
-
     global_merge<KSIZE, DMAX_C> merger(
       part_paths, ab_mins, model, accumulators, config.kmer_size, opt->nb_controls,
       opt->nb_cases, opt->threshold/opt->cutoff, opt->nb_threads, sampler);
@@ -146,80 +110,76 @@ namespace kmdiff {
     spdlog::info("{}/{} significant k-mers.", merger.nb_sign(), total_kmers);
     spdlog::info("Before correction: {} (control), {} (case).", sign_controls, sign_cases);
 
-    if (opt->learning_rate) pop_strat_corrector::s_learn_rate = opt->learning_rate;
-    if (opt->max_iteration) pop_strat_corrector::s_max_iter = opt->max_iteration;
-    if (opt->epsilon) pop_strat_corrector::s_epsilon = opt->epsilon;
-    if (opt->stand) pop_strat_corrector::s_stand = opt->stand;
-    if (opt->irls) pop_strat_corrector::s_irls = opt->irls;
+    return total_kmers;
+  }
 
-    if (opt->pop_correction)
+  #ifdef WITH_POPSTRAT
+  template<std::size_t KSIZE>
+    void do_pop(std::vector<acc_t<KmerSign<KSIZE>>>& accumulators,
+                const std::string& pop_dir,
+                const std::string& output_part_dir,
+                diff_options_t opt,
+                const kmtricks_config_t& config)
     {
-      geno->close();
-      snp->close();
-    }
+      Timer pca_time;
 
-    #ifdef WITH_POPSTRAT
       std::vector<acc_t<KmerSign<KSIZE>>> pop_accumulators;
-      if (opt->pop_correction)
+
+      std::string gwas_eigenstratX_ind = fmt::format("{}/gwas_eigenstratX.ind", pop_dir);
+      std::string gwas_eigenstratX_total = fmt::format("{}/gwas_eigenstratX.total", pop_dir);
+      std::string pcs_evec = fmt::format("{}/pcs.evec", pop_dir);
+
+      std::string parfile_path = fmt::format("{}/parfile.txt", pop_dir);
+      std::string gwas_info_path = fmt::format("{}/gwas_infos.txt", pop_dir);
+      std::string fof = fmt::format("{}/kmtricks.fof", opt->kmtricks_dir);
+
+      auto [total_controls, total_cases] = get_total_kmer(opt->kmtricks_dir, opt->nb_controls, opt->nb_cases, config.abundance_min);
+
+      write_parfile(parfile_path);
+      write_gwas_info(fof, gwas_info_path, opt->nb_controls, opt->nb_cases);
+      write_gwas_info(fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases);
+      write_gwas_eigenstrat_total(gwas_eigenstratX_total, total_controls, total_cases);
+
+      std::string log_eigenstrat = "eigenstrat.log";
+      run_eigenstrat_smartpca(
+        pop_dir, "parfile.txt", log_eigenstrat, opt->is_diploid, opt->nb_controls + opt->nb_cases);
+
+      spdlog::info("PCA done. ({}).", pca_time.formatted());
+
+      Timer pop_time;
+
+      spdlog::info("Apply population stratification correction...");
+      auto pop_corrector = std::make_shared<pop_strat_corrector>(
+        opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->npc);
+
+      pop_corrector->load_Z(pcs_evec);
+      pop_corrector->load_Y(gwas_eigenstratX_ind);
+      pop_corrector->load_C(opt->covariates);
+      pop_corrector->load_ginfo(gwas_info_path);
+      pop_corrector->init_global_features();
+
+      pop_accumulators.resize(accumulators.size());
+
+      for (std::size_t p = 0; p < accumulators.size(); p++)
       {
-        std::string gwas_eigenstratX_ind = fmt::format("{}/gwas_eigenstratX.ind", pop_dir);
-        std::string gwas_eigenstratX_total = fmt::format("{}/gwas_eigenstratX.total", pop_dir);
-        std::string pcs_evec = fmt::format("{}/pcs.evec", pop_dir);
-
-        spdlog::info("PCA for population stratification correction...");
-
-        Timer pca_time;
-
-        std::string parfile_path = fmt::format("{}/parfile.txt", pop_dir);
-        std::string gwas_info_path = fmt::format("{}/gwas_infos.txt", pop_dir);
-        std::string fof = fmt::format("{}/kmtricks.fof", opt->kmtricks_dir);
-
-        write_parfile(parfile_path);
-        write_gwas_info(fof, gwas_info_path, opt->nb_controls, opt->nb_cases);
-        write_gwas_info(fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases);
-        write_gwas_eigenstrat_total(gwas_eigenstratX_total, total_controls, total_cases);
-
-        std::string log_eigenstrat = "eigenstrat.log";
-        run_eigenstrat_smartpca(
-            pop_dir, "parfile.txt", log_eigenstrat, opt->is_diploid, opt->nb_controls + opt->nb_cases);
-
-        spdlog::info("PCA done. ({}).", pca_time.formatted());
-
-        Timer pop_time;
-
-        spdlog::info("Apply population stratification correction...");
-        auto pop_corrector = std::make_shared<pop_strat_corrector>(
-          opt->nb_controls, opt->nb_cases, total_controls, total_cases, opt->npc);
-
-        pop_corrector->load_Z(pcs_evec);
-        pop_corrector->load_Y(gwas_eigenstratX_ind);
-        pop_corrector->load_C(opt->covariates);
-        pop_corrector->load_ginfo(gwas_info_path);
-        pop_corrector->init_global_features();
-
-        pop_accumulators.resize(accumulators.size());
-
-        for (std::size_t p = 0; p < accumulators.size(); p++)
-        {
-          if (opt->in_memory)
-          {
-            pop_accumulators[p] = std::make_shared<VectorAccumulator<KmerSign<KSIZE>>>(65536);
-          }
-          else
-          {
-            pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
-              fmt::format("{}/accp_{}", output_part_dir, p), config.kmer_size);
-          }
-        }
-
-        pop_corrector->apply(accumulators, pop_accumulators, 1);
-
-        accumulators.swap(pop_accumulators);
-
-        spdlog::info("Population correction done. ({}).", pop_time.formatted());
+        pop_accumulators[p] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+          fmt::format("{}/p{}_popstrat_uncorrected", output_part_dir, p), config.kmer_size, false, !opt->keep_tmp);
       }
-    #endif
 
+      pop_corrector->apply(accumulators, pop_accumulators, opt->nb_threads);
+
+      accumulators.swap(pop_accumulators);
+
+      spdlog::info("Population correction done. ({}).", pop_time.formatted());
+    }
+  #endif
+
+  template<std::size_t KSIZE>
+  void do_correction(std::vector<acc_t<KmerSign<KSIZE>>>& accumulators,
+                     diff_options_t opt,
+                     const kmtricks_config_t& config,
+                     std::size_t total_kmers)
+  {
     Timer agg_time;
 
     if (opt->correction == CorrectionType::NOTHING)
@@ -247,9 +207,122 @@ namespace kmdiff {
     delete pb;
     spdlog::info("Partitions aggregated ({})", agg_time.formatted());
     spdlog::info("Significant k-mers: {} (control), {} (case).", c_controls, c_cases);
+  }
+
+  template<std::size_t KSIZE>
+  void main_diff(kmdiff_options_t options)
+  {
+    diff_options_t opt = std::static_pointer_cast<struct diff_options>(options);
+    spdlog::debug(opt->display());
+
+    #ifdef WITH_PLUGIN
+      if (!opt->model_lib_path.empty())
+        plugin_manager<IModel<DMAX_C>>::get().init(opt->model_lib_path, opt->model_config);
+    #endif
+
+    Timer whole_time;
+    km::KmDir::get().init(opt->kmtricks_dir, fmt::format("{}/kmtricks.fof", opt->kmtricks_dir));
+    kmtricks_config_t config = get_kmtricks_config(opt->kmtricks_dir);
+    km::Kmer<KSIZE>::m_kmer_size = config.kmer_size;
+
+    bool prev_run = fs::exists(fmt::format("{}/options.bin", opt->output_directory));
+    diff_options_t prev_opt = nullptr;
+
+    bool prev_1 = false;
+    bool prev_2 = false;
+    bool prev_f = false;
+    unsigned action = 0;
+
+    std::string output_part_dir = fmt::format("{}/partitions", opt->output_directory);
+    fs::create_directories(output_part_dir);
+
+    if (prev_run)
+    {
+      prev_opt = load_opt(fmt::format("{}/options.bin", opt->output_directory));
+      spdlog::debug(fmt::format("Previous {}", prev_opt->display()));
+      action = compare_opt(opt, prev_opt);
+      prev_1 = partitions_exist("{}/p{}_uncorrected", config.nb_partitions, output_part_dir);
+      prev_2 = partitions_exist("{}/p{}_popstrat_uncorrected", config.nb_partitions, output_part_dir);
+      prev_f = fs::exists(fmt::format("{}/control_kmers.fasta", opt->output_directory)) &&
+               fs::exists(fmt::format("{}/case_kmers.fasta", opt->output_directory));
+
+      spdlog::debug("prev1 -> {}", prev_1);
+      spdlog::debug("prev2 -> {}", prev_2);
+      spdlog::debug("prevf -> {}", prev_f);
+      spdlog::debug("action -> {}", action);
+    }
+
+    eig_geno_t<DMAX_C> geno {nullptr};
+    eig_snp_t snp {nullptr};
+    std::shared_ptr<Sampler<DMAX_C>> sampler {nullptr};
+
+    std::string pop_dir;
+
+    if (opt->pop_correction)
+    {
+      pop_dir = fmt::format("{}/popstrat", opt->output_directory);
+      fs::create_directory(pop_dir);
+    }
+
+    bool redo_c = false;
+    std::vector<acc_t<KmerSign<KSIZE>>> accumulators(config.nb_partitions);
+
+    if (!prev_1 || (action & 0b1))
+    {
+      std::string gwas_eigenstratX_geno = fmt::format("{}/gwas_eigenstratX.geno", pop_dir);
+      std::string gwas_eigenstratX_snp = fmt::format("{}/gwas_eigenstratX.snp", pop_dir);
+
+      if (opt->pop_correction)
+      {
+        geno = std::make_shared<EigGenoFile<DMAX_C>>(gwas_eigenstratX_geno);
+        snp = std::make_shared<EigSnpFile>(gwas_eigenstratX_snp);
+        sampler = std::make_shared<Sampler<DMAX_C>>(geno, snp, opt->kmer_pca, opt->seed);
+      }
+
+      opt->total_kmers = do_diff<KSIZE>(opt, config, output_part_dir, accumulators, sampler);
+      redo_c = true;
+
+      if (opt->pop_correction)
+      {
+        geno->close();
+        snp->close();
+      }
+    }
+    else
+    {
+      opt->total_kmers = prev_opt->total_kmers;
+      for (std::size_t i = 0; i < accumulators.size(); ++i)
+      {
+        accumulators[i] = std::make_shared<FileAccumulator<KmerSign<KSIZE>>>(
+          fmt::format("{}/p{}_uncorrected", output_part_dir, i), config.kmer_size, true, !opt->keep_tmp);
+      }
+    }
+
+    dump_opt(opt, fmt::format("{}/options.bin", opt->output_directory));
+
+    #ifdef WITH_POPSTRAT
+      pop_strat_corrector::set_params(opt->max_iteration,
+                                      opt->learning_rate,
+                                      opt->epsilon,
+                                      opt->stand,
+                                      opt->irls);
+
+      if (opt->pop_correction && ((!prev_2 || (action & 0b10)) || ((action & 0b1) || !prev_1)))
+      {
+        do_pop<KSIZE>(accumulators, pop_dir, output_part_dir, opt, config);
+        redo_c = true;
+      }
+    #endif
+
+    if ((!prev_f || (action > 0)) || redo_c)
+    {
+      do_correction<KSIZE>(accumulators, opt, config, opt->total_kmers);
+    }
 
     spdlog::info(
-      "Done in {}, Peak RSS -> {} MB.", whole_time.formatted(), static_cast<size_t>(get_peak_rss() * 0.0009765625)
+      "Done in {}, Peak RSS -> {} MB.",
+      whole_time.formatted(),
+      static_cast<size_t>(get_peak_rss() * 0.0009765625)
     );
   }
 
