@@ -1,10 +1,7 @@
 # kmdiff
 
 ![License](http://img.shields.io/:license-affero-blue.svg)
-![linux](https://github.com/tlemane/kmdiff/actions/workflows/linux.yml/badge.svg)
-![osx](https://github.com/tlemane/kmdiff/actions/workflows/osx.yml/badge.svg)
-
-This is a work in progress, it is not yet fully usable.
+[![kmdiff](https://github.com/tlemane/kmdiff/actions/workflows/kmdiff.yml/badge.svg)](https://github.com/tlemane/kmdiff/actions/workflows/kmdiff.yml)
 
 ## Rationale
 
