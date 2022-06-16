@@ -1,5 +1,9 @@
 include(ExternalProject)
 
+if (STATIC_BUILD AND NOT APPLE)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 find_package(ZLIB REQUIRED)
 target_link_libraries(links INTERFACE ZLIB::ZLIB)
 

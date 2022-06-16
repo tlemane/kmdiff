@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(kmdiff VERSION 0.0.1 LANGUAGES C CXX)
+project(kmdiff VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -10,6 +10,8 @@ option(WITH_PLUGIN "Build plugins" OFF)
 
 option(CONDA_BUILD "Build inside conda env" OFF)
 option(DEV_BUILD "Dev build" OFF)
+
+option(STATIC_BUILD "Static build" OFF)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -134,5 +136,8 @@ if (WITH_POPSTRAT)
 endif()
 
 include(GNUInstallDirs)
-install (TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
-install (FILES ${CMAKE_SOURCE_DIR}/bin/smartpca DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (TARGETS ${PROJECT_NAME}-bin DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (FILES ${CMAKE_BINARY_DIR}/bin/smartpca DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (FILES ${CMAKE_BINARY_DIR}/bin/evec2pca.perl DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+include(CPackConfig)

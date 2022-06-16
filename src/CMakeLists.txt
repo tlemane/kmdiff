@@ -18,6 +18,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC warning_flags build_type_flags head
 
 add_executable(${PROJECT_NAME}-bin main.cc)
 target_link_libraries(${PROJECT_NAME}-bin PRIVATE ${PROJECT_NAME})
+if (STATIC_BUILD AND NOT APPLE)
+  target_link_libraries(${PROJECT_NAME}-bin PRIVATE -static)
+endif()
 set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME kmdiff)
 
 add_compile_definitions(KMD_USE_IRLS)
