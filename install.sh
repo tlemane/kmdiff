@@ -32,11 +32,29 @@ function kmdiff_build_conda ()
   conda activate ./kmdiff_conda
 
   if [ "$(uname)" == "Darwin" ]; then
-    conda install -y clangxx_osx-64=11.1.0 cmake zlib bzip2 openblas liblapacke gsl -c conda-forge
+    conda install -y -c conda-forge clangxx_osx-64=11.1.0 \
+                                    cmake \
+                                    zlib \
+                                    bzip2 \
+                                    openblas \
+                                    openblas-devel \
+                                    liblapacke \
+                                    liblapack \
+                                    gsl
+
     export CC=$(realpath ./kmdiff_conda/bin/x86_64-apple-darwin13.4.0-clang)
     export CXX=$(realpath ./kmdiff_conda/bin/x86_64-apple-darwin13.4.0-clang++)
   else
-    conda install -y gxx_linux-64=9.3.0 cmake zlib bzip2 openblas liblapacke gsl -c conda-forge
+    conda install -y -c conda-forge gxx_linux-64=9.3.0 \
+                                    cmake \
+                                    zlib \
+                                    bzip2 \
+                                    openblas \
+                                    openblas-devel \
+                                    liblapacke \
+                                    liblapack \
+                                    gsl
+
     export CC=$(realpath ./kmdiff_conda/bin/x86_64-conda_cos6-linux-gnu-gcc)
     export CXX=$(realpath ./kmdiff_conda/bin/x86_64-conda_cos6-linux-gnu-g++)
   fi
@@ -47,7 +65,7 @@ function kmdiff_build_conda ()
   [[ -d "kmdiff_build" ]] || mkdir kmdiff_build
   cd kmdiff_build
 
-  cmake .. -DCMAKE_PREFIX_PATH=./kmdiff_conda -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
+  cmake .. -DCMAKE_PREFIX_PATH=./kmdiff_conda -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5} -DCMAKE_PREFIX_PATH=$(realpath ../kmdiff_conda)
 
   make -j${6}
 
