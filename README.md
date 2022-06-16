@@ -69,7 +69,7 @@ For conveniance, all kmdiff other build dependencies are included in [thirdparty
 ```bash
 conda create -p /kmdiff-env
 conda activate ./kmdiff-env
-conda install -c bioconda -c tlemane -c tlemane/label/dev kmdiff # temporary
+conda install -c bioconda -c tlemane kmdiff
 ```
 
 ### 2. Build from source
@@ -90,7 +90,7 @@ conda install -c bioconda -c tlemane -c tlemane/label/dev kmdiff # temporary
 ```
 kmdiff build script.
 Usage:
-  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-s int] [-p] [-e] [-h]
+  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-s int] [-p] [-e] [-d] [-h]
 Options:
   -r <Release|Debug> -> build type {Release}.
   -k <LIST[INT]>     -> k-mer size {"32 64 96 128"}.
@@ -98,9 +98,10 @@ Options:
   -c <1|2|4>         -> byte per count {4}.
   -j <INT>           -> nb threads {8}.
   -s <0|1>           -> population stratification correction 0 = disabled, 1 = enabled {1}
-                        (-s 1 requires GSL + Lapacke + OpenBLAS)
+                        (-s 1 requires GSL + lapacke + OpenBLAS)
   -p                 -> compile with plugins support {disabled}
   -e                 -> use conda to install compilers/dependencies {disabled}
+  -d                 -> delete cmake cache {disabled}
   -h                 -> show help.
 ```
 
@@ -108,22 +109,9 @@ If you are unable to install the prerequisites on your system, use `-e`. Compile
 
 ## Usage
 
-```
-kmdiff v0.0.1
+An example on a small dataset is available [here](./examples).
 
-DESCRIPTION
-  kmdiff - Differential k-mers analysis.
-
-USAGE
-  kmdiff [infos|count|diff]
-
-COMMANDS
-  infos - Show build infos.
-  count - Count k-mers with kmtricks.
-  diff  - Differential k-mers analysis.
-```
-
-### 1) kmdiff count - count k-mers with kmtricks
+### 1) `kmdiff count` - count k-mers with kmtricks
 
 **Input file: one sample per line** (controls must appear first)
 ```
@@ -133,35 +121,27 @@ case1: /path/to/case1_read1.fastq ; /path/to/case1_read2.fastq
 case2: /path/to/case2_read1.fastq ; /path/to/case2_read2.fastq
 ```
 
-**A sample-specific min abundance threshold can be specified as follows:**
-```
-control1: /path/to/control1_read1.fastq ; /path/to/control1_read2.fastq ! 3
-control2: /path/to/control2_read1.fastq ; /path/to/control2_read2.fastq ! 5
-case1: /path/to/case1_read1.fastq ; /path/to/case1_read2.fastq ! 2
-case2: /path/to/case2_read1.fastq ; /path/to/case2_read2.fastq ! 2
-```
-
 Supported files: fasta/fastq, gzipped or not.
 
 **Options**
 ```
-kmdiff count v0.0.1
+kmdiff count v1.0.0
 
 DESCRIPTION
   Count k-mers with kmtricks.
 
 USAGE
   kmdiff count -f/--file <FILE> -d/--run-dir <DIR> [-k/--kmer-size <INT>] [-c/--hard-min <INT>]
-               [--minimizer-type <INT>] [--minimizer-size <INT>] [--repartition-type <INT>]
-               [--nb-partitions <INT>] [-t/--threads <INT>] [-v/--verbose <STR>] [-h/--help]
-               [--version]
+               [-r/--recurrence-min <INT>] [--minimizer-type <INT>]
+               [--minimizer-size <INT>] [--repartition-type <INT>] [--nb-partitions <INT>]
+               [-t/--threads <INT>] [-v/--verbose <STR>] [-h/--help] [--version]
 
 OPTIONS
   [global]
-    -f --file      - fof that contains path of read files
-    -d --run-dir   - output directory.
-    -k --kmer-size - size of k-mers [8, 127] {31}
-    -c --hard-min  - min abundance for solid k-mers {1}
+    -f --file           - fof that contains path of read files
+    -d --run-dir        - output directory.
+    -k --kmer-size      - size of k-mers [8, 127] {31}
+    -c --hard-min       - min abundance to keep a k-mer {1}
     -r --recurrence-min - min recurrence to keep a k-mer {1}
 
   [advanced performance tweaks]
@@ -177,9 +157,10 @@ OPTIONS
     -v --verbose - Verbosity level [debug|info|warning|error]. {info}
 ```
 
-### 2) kmdiff diff - aggregate k-mers and dump the significant ones
+### 2) `kmdiff diff` - aggregate k-mers and dump the significant ones
+
 ```
-kmdiff diff v0.0.1
+kmdiff diff v1.0.0
 
 DESCRIPTION
   Differential k-mers analysis.
@@ -188,9 +169,8 @@ USAGE
   kmdiff diff -d/--km-run <DIR> -1/--nb-controls <INT> -2/--nb-cases <INT> [-o/--output-dir <DIR>]
               [-s/--significance <FLOAT>] [-u/--cutoff <INT>] [-c/--correction <STR>]
               [--gender <FILE>] [--kmer-pca <FLOAT>] [--ploidy <INT>] [--n-pc <INT>]
-              [--covariates <FILE>] [-t/--threads <INT>] [-v/--verbose <STR>]
-              [-f/--kff-output] [-m/--in-memory] [-r/--cpr] [--pop-correction] [-h/--help]
-              [--version]
+              [-t/--threads <INT>] [-v/--verbose <STR>] [-f/--kff-output] [-m/--in-memory]
+              [--keep-tmp] [--pop-correction] [-h/--help] [--version]
 
 OPTIONS
   [global]
@@ -199,19 +179,21 @@ OPTIONS
     -1 --nb-controls  - number of controls.
     -2 --nb-cases     - number of cases.
     -s --significance - significance threshold. {0.05}
-    -u --cutoff       - cutoff {100000}
+    -u --cutoff       - Divide the significance threshold by N.
+                        Since a large number of k-mers are tested, k-mers with p-values too close to the significance
+                        threshold will not pass the last steps of correction.
+                        It allows to discard some k-mers a bit earlier and thus save space and time. {100000}
     -c --correction   - significance correction. (bonferroni|benjamini|sidak|holm|disabled) {bonferroni}
     -f --kff-output   - output significant k-mers in kff format. [⚑]
     -m --in-memory    - in-memory correction. [⚑]
-    -r --cpr          - compress intermediate files [⚑]
+       --keep-tmp     - keep tmp files. [⚑]
 
   [population stratification]
      --pop-correction - apply correction for population stratification. [⚑]
-     --gender         - gender file
+     --gender         - gender file, one sample per line with the id and the gender (M,F,U), space-separated.
      --kmer-pca       - proportion of k-mers used for PCA (in [0.0, 0.05]). {0.001}
      --ploidy         - ploidy level. {2}
      --n-pc           - number of principal components (in [2, 10]). {2}
-     --covariates     - covariates file.
 
   [common]
     -t --threads - number of threads. {8}
@@ -225,6 +207,9 @@ OPTIONS
 * case significant k-mers: `<output_dir>/case_kmers.[fasta|kff]`
 
 Abundances and p-values are provided in fasta headers.
+
+
+
 
 ## Reporting an issue
 
