@@ -53,7 +53,7 @@ jobs:
           cd build
           export CC=$(which ${{ matrix.cc }})
           export CXX=$(which ${{ matrix.cxx }})
-          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=OFF -DSTATIC_BUILD=ON
+          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=ON -DSTATIC_BUILD=ON
 
       - name: Build
         shell: bash
@@ -67,12 +67,34 @@ jobs:
         shell: bash
         run: cd build && ctest --verbose
 
+      - name: Package
+        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        shell: bash
+        run: cd build && make package
+
+      - name: Get tag name
+        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        id: tag
+        run: echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
+
       - name: Release archive
         if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         shell: bash
         run: |
           mkdir archive_files
           bash scripts/git-archive-all.sh --format tar.gz ./archive_files/kmdiff-${{ steps.tag.outputs.TAG }}-sources.tar.gz
+          mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Linux.tar.gz archive_files
+
+      - name: Release
+        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        uses: svenstaro/upload-release-action@v2
+        with:
+          release_name: Release ${{ steps.tag.outputs.TAG }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: 'archive_files/*'
+          file_glob: true
+          tag: ${{ github.ref }}
+          prerelease: true
 
   MacOS:
     runs-on: macos-10.15
@@ -95,9 +117,42 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCOMPILE_TESTS=OFF -DWITH_POPSTRAT=OFF
+          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=ON
 
       - name: Build
         shell: bash
         run: cd build && make -j2
+
+      - name: Tests
+        shell: bash
+        run: cd build && ctest --verbose
+
+      - name: Package
+        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        shell: bash
+        run: cd build && make package
+
+      - name: Get tag name
+        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        id: tag
+        run: echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
+
+      - name: Release archive
+        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          mkdir archive_files
+          mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Darwin.tar.gz archive_files
+
+      - name: Release
+        if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        uses: svenstaro/upload-release-action@v2
+        with:
+          release_name: Release ${{ steps.tag.outputs.TAG }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: 'archive_files/*'
+          file_glob: true
+          tag: ${{ github.ref }}
+          prerelease: true
+
 
