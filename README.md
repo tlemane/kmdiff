@@ -214,6 +214,6 @@ If you encounter a problem, please open an issue with the return of `kmdiff info
 
 ## Contact
 
-Téo Lemane: teo[dot]lemane[at]inria[dot]fr
-Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr
-Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr
+Téo Lemane: teo[dot]lemane[at]inria[dot]fr  
+Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr  
+Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr  
