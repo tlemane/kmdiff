@@ -117,7 +117,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=ON
+          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=OFF
 
       - name: Build
         shell: bash
