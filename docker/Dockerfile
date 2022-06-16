@@ -18,4 +18,4 @@ RUN cd /opt/kmdiff && chmod +x ./bin/*
 
 WORKDIR /tmp
 
-ENTRYPOINT ["/opt/kmdiff/bin/kmdiff"]
+ENTRYPOINT ["/opt/kmdiff/kmdiff_build/bin/kmdiff"]

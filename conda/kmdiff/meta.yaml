@@ -1,4 +1,4 @@
-{% set version = "0.0.1" %}
+{% set version = "1.0.0" %}
 
 package:
   name: kmdiff
@@ -14,6 +14,7 @@ requirements:
     - cmake
     - gsl
     - openblas
+    - openblas-devel
     - liblapacke
 
   host:

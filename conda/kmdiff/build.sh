@@ -27,7 +27,7 @@ make -j4
 
 mkdir -p $PREFIX/bin
 
-cp -r ./bin/kmdiff $PREFIX/bin
-cp -r ./bin/smartpca $PREFIX/bin
-cp -r ./bin/evec2pca.perl $PREFIX/bin
+cp -r ./build-conda/bin/kmdiff $PREFIX/bin
+cp -r ./build-conda/bin/smartpca $PREFIX/bin
+cp -r ./build-conda/bin/evec2pca.perl $PREFIX/bin
 
