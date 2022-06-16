@@ -41,7 +41,7 @@ namespace kmdiff {
   void write_parfile(const std::string& path);
 
   void write_gwas_info(const std::string& kmfof, const std::string& path,
-                       size_t nb_controls, size_t nb_cases);
+                       size_t nb_controls, size_t nb_cases, const std::string& gender_file);
 
   void write_gwas_eigenstrat_total(const std::string& path,
                                    const std::vector<std::size_t>& c1,

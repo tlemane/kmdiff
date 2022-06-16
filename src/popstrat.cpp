@@ -15,9 +15,32 @@ namespace kmdiff {
   }
 
   void write_gwas_info(const std::string& kmfof, const std::string& path,
-                       size_t nb_controls, size_t nb_cases)
+                       size_t nb_controls, size_t nb_cases, const std::string& gender_file)
   {
     km::Fof fof(kmfof);
+
+    std::map<std::string, char> gm;
+
+    if (gender_file.size() > 0)
+    {
+      std::ifstream in_g(path, std::ios::in);
+
+      check_fstream_good(path, in_g);
+
+      for (std::string line; std::getline(in_g, line);)
+      {
+        auto vl = bc::utils::split(line, ' ');
+        fof.get_i(vl[0]);
+
+        char g = vl[1][0];
+
+        if (g != 'U' || g != 'M' || g != 'F')
+        {
+          throw IOError(fmt::format("Unknown gender: {}", g));
+        }
+      }
+    }
+
     std::ofstream out(path, std::ios::out); check_fstream_good(path, out);
     std::string parent = fs::path(path).parent_path().string();
     std::string control_ind = fmt::format("{}/control.ind", parent);
@@ -30,13 +53,31 @@ namespace kmdiff {
     {
       if (i < nb_controls)
       {
-        out << id << "\tU\t" << "Control" << "\n";
-        coind << id << "\tU\t" << "Control" << "\n";
+        auto it = gm.find(id);
+        if (it == gm.end())
+        {
+          out << id << "\tU\t" << "Control" << "\n";
+          coind << id << "\tU\t" << "Control" << "\n";
+        }
+        else
+        {
+          out << id << '\t' << gm.at(id) << '\t' << "Control" << "\n";
+          coind << id << '\t' << gm.at(id) <<'\t' << "Control" << "\n";
+        }
       }
       else
       {
-        out << id << "\tU\t" << "Case" << "\n";
-        caind << id << "\tU\t" << "Case" << "\n";
+        auto it = gm.find(id);
+        if (it == gm.end())
+        {
+          out << id << "\tU\t" << "Case" << "\n";
+          caind << id << "\tU\t" << "Case" << "\n";
+        }
+        else
+        {
+          out << id << '\t' << gm.at(id) << '\t' << "Case" << "\n";
+          caind << id << '\t' << gm.at(id) << '\t' << "Case" << "\n";
+        }
       }
       i++;
     }

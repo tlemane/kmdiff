@@ -304,7 +304,8 @@ namespace kmdiff {
           ->meta("FILE")
           ->def("")
           ->checker(bc::check::is_file)
-          ->setter(options->covariates);
+          ->setter(options->covariates)
+          ->hide();
     #endif
 
     #if KMD_DEV_MODE

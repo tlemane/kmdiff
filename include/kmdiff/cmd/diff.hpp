@@ -136,8 +136,8 @@ namespace kmdiff {
       auto [total_controls, total_cases] = get_total_kmer(opt->kmtricks_dir, opt->nb_controls, opt->nb_cases, config.abundance_min);
 
       write_parfile(parfile_path);
-      write_gwas_info(fof, gwas_info_path, opt->nb_controls, opt->nb_cases);
-      write_gwas_info(fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases);
+      write_gwas_info(fof, gwas_info_path, opt->nb_controls, opt->nb_cases, opt->gender);
+      write_gwas_info(fof, gwas_eigenstratX_ind, opt->nb_controls, opt->nb_cases, opt->gender);
       write_gwas_eigenstrat_total(gwas_eigenstratX_total, total_controls, total_cases);
 
       std::string log_eigenstrat = "eigenstrat.log";
