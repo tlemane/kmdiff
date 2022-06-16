@@ -194,7 +194,10 @@ namespace kmdiff {
         ->setter(options->threshold)
         ->def("0.05");
 
-    diff_cmd->add_param("-u/--cutoff", "cutoff")
+    diff_cmd->add_param("-u/--cutoff", "Divide the significance threshold by N.\n" \
+               "                        Since a large number of k-mers are tested, k-mers with p-values too close to the significance\n" \
+               "                        threshold will not pass the last steps of correction.\n" \
+               "                        It allows to discard some k-mers a bit earlier and thus save space and time.")
       ->meta("INT")
       ->checker(bc::check::is_number)
       ->setter(options->cutoff)
@@ -270,7 +273,7 @@ namespace kmdiff {
           ->as_flag()
           ->setter(options->pop_correction);
 
-      diff_cmd->add_param("--gender", "gender file")
+      diff_cmd->add_param("--gender", "gender file, one sample per line with the id and the gender (M,F,U), space-separated.")
           ->meta("FILE")
           ->def("")
           ->checker(bc::check::is_file)
