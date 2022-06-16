@@ -100,7 +100,7 @@ namespace kmdiff {
       size = backtrace(stack, max_size);
       char** symbols = backtrace_symbols(stack, size);
 
-      std::string backtrace_path = fmt::format("./{}_backtrace.log", PROJECT_NAME);
+      std::string backtrace_path = fmt::format("./{}_backtrace.log", KMD_PROJECT_NAME);
       ss << "\nBacktrace:\n";
       for (int i = 1; i < size; i++)
       {
