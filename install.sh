@@ -10,10 +10,10 @@ function kmdiff_build ()
 
   [[ ${8} == 1 ]] && rm CMakeCache.txt
 
-  if [ "$(uname)" == "Darwin" ]; then
+  if [ "$(uname)" != "Darwin" ]; then
     cmake .. -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
   else
-    cmake .. -DCMAKE_PREFIX_PATH=/usr/local/opt/openblas -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
+    cmake .. -DCMAKE_PREFIX_PATH="/usr/local/opt/openblas;/usr/local/opt/lapack" -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
   fi
 
   make -j${6}
