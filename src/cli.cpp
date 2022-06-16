@@ -102,7 +102,7 @@ namespace kmdiff {
         ->setter(options->kmer_size)
         ->meta("INT");
 
-    count_cmd->add_param("-c/--hard-min", "min abundance for solid k-mers")
+    count_cmd->add_param("-c/--hard-min", "min abundance to keep a k-mer")
         ->checker(bc::check::is_number)
         ->setter(options->abundance_min)
         ->def("1")
