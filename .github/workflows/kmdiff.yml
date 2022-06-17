@@ -83,7 +83,7 @@ jobs:
         run: |
           mkdir archive_files
           bash scripts/git-archive-all.sh --format tar.gz ./archive_files/kmdiff-${{ steps.tag.outputs.TAG }}-sources.tar.gz
-          mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Linux.tar.gz archive_files
+          mv build/kmdiff-${{ steps.tag.outputs.TAG }}-bin-Linux.tar.gz archive_files
 
       - name: Release
         if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
@@ -142,7 +142,7 @@ jobs:
         shell: bash
         run: |
           mkdir archive_files
-          mv build/kmtricks-${{ steps.tag.outputs.TAG }}-bin-Darwin.tar.gz archive_files
+          mv build/kmdiff-${{ steps.tag.outputs.TAG }}-bin-Darwin.tar.gz archive_files
 
       - name: Release
         if: matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
