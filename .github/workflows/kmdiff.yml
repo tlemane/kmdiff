@@ -68,17 +68,17 @@ jobs:
         run: cd build && ctest --verbose
 
       - name: Package
-        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         shell: bash
         run: cd build && make package
 
       - name: Get tag name
-        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         id: tag
         run: echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
 
       - name: Release archive
-        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         shell: bash
         run: |
           mkdir archive_files
@@ -86,7 +86,7 @@ jobs:
           mv build/kmdiff-${{ steps.tag.outputs.TAG }}-bin-Linux.tar.gz archive_files
 
       - name: Release
-        if: matrix.compiler == 'g++10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.compiler == 'g++-10' && matrix.build_type == 'Release' && startsWith(github.event.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v2
         with:
           release_name: Release ${{ steps.tag.outputs.TAG }}
