@@ -117,7 +117,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=OFF
+          cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DWITH_TESTS=ON -DWITH_POPSTRAT=ON -DCMAKE_PREFIX_PATH="/usr/local/opt/openblas;/usr/local/opt/lapack"
 
       - name: Build
         shell: bash
