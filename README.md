@@ -106,8 +106,6 @@ If you are unable to install the prerequisites on your system, use `-e`. Compile
 
 ## Usage
 
-An example on a small dataset is available [here](./examples).
-
 ### 1) `kmdiff count` - count k-mers with kmtricks
 
 **Input file: one sample per line** (controls must appear first)
@@ -205,8 +203,9 @@ OPTIONS
 
 Abundances and p-values are provided in fasta headers.
 
+## Testing
 
-
+An example on a small dataset is available [here](./examples).
 
 ## Reporting an issue
 
