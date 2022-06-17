@@ -12,6 +12,7 @@ option(CONDA_BUILD "Build inside conda env" OFF)
 option(DEV_BUILD "Dev build" OFF)
 
 option(STATIC_BUILD "Static build" OFF)
+option(NATIVE_BUILD "Build with -march=native" ON)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -31,10 +32,14 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(build_type_flags INTERFACE)
 target_compile_options(build_type_flags INTERFACE
   $<$<CONFIG:Debug>:-O0 -g>
-  $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>
+  $<$<CONFIG:Release>:-O3 -DNDEBUG>
   $<$<CONFIG:Profile>:-O3 -ggdb3 -DNDEBUG -fno-inline>
   $<$<CONFIG:Coverage>:-O0 -g --coverage>
 )
+
+if (NATIVE_BUILD)
+  target_compile_options(build_types_flags INTERFACE "-march=native")
+endif()
 
 add_library(warning_flags INTERFACE)
 target_compile_options(warning_flags INTERFACE
