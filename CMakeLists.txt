@@ -38,7 +38,7 @@ target_compile_options(build_type_flags INTERFACE
 )
 
 if (NATIVE_BUILD)
-  target_compile_options(build_types_flags INTERFACE "-march=native")
+  target_compile_options(build_type_flags INTERFACE "-march=native")
 endif()
 
 add_library(warning_flags INTERFACE)
