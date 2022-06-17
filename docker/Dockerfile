@@ -14,7 +14,7 @@ RUN cd /opt \
     && cd kmdiff \
     && ./install.sh
 
-RUN cd /opt/kmdiff && chmod +x ./bin/*
+RUN cd /opt/kmdiff && chmod +x ./kmdiff_build/bin/*
 
 WORKDIR /tmp
 
