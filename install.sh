@@ -13,7 +13,7 @@ function kmdiff_build ()
   if [ "$(uname)" != "Darwin" ]; then
     cmake .. -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
   else
-    cmake .. -DCMAKE_PREFIX_PATH="/usr/local/opt/openblas;/usr/local/opt/lapack" -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5}
+    cmake .. -DCMAKE_PREFIX_PATH="/usr/local/opt/openblas;/usr/local/opt/lapack" -DCMAKE_BUILD_TYPE=${1} -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5} -DWITH_PLUGIN=${9}
   fi
 
   make -j${6}
@@ -65,7 +65,7 @@ function kmdiff_build_conda ()
   [[ -d "kmdiff_build" ]] || mkdir kmdiff_build
   cd kmdiff_build
 
-  cmake .. -DCMAKE_PREFIX_PATH=./kmdiff_conda -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5} -DCMAKE_PREFIX_PATH=$(realpath ../kmdiff_conda)
+  cmake .. -DCMAKE_PREFIX_PATH=./kmdiff_conda -DKMER_LIST="${2}" -DMAX_C=${3} -DWITH_POPSTRAT=${4} -DWITH_TESTS=${5} -DCMAKE_PREFIX_PATH=$(realpath ../kmdiff_conda) -DWITH_PLUGIN=${9}
 
   make -j${6}
 
@@ -141,7 +141,7 @@ while getopts "r:k:t:c:j:s:epdh" option; do
       [[ ${pop} == 0 ]] && pop="OFF"
       ;;
     p)
-      plugin="OFF"
+      plugin="ON"
       ;;
     e)
       conda=1
@@ -161,8 +161,8 @@ if [[ ${conda} -eq 1 ]]; then
   conda_install_path=$(conda info | grep -i 'base environment')
   conda_install_path=$(echo ${conda_install_path} | cut -d' ' -f4)
   source ${conda_install_path}/etc/profile.d/conda.sh
-  kmdiff_build_conda ${mode} "${ks}" ${count} ${pop} ${tests_str} ${jopt} ${tests_run} ${cmake_cache}
+  kmdiff_build_conda ${mode} "${ks}" ${count} ${pop} ${tests_str} ${jopt} ${tests_run} ${cmake_cache} ${plugin}
 else
-  kmdiff_build ${mode} "${ks}" ${count} ${pop} ${tests_str} ${jopt} ${tests_run} ${cmake_cache}
+  kmdiff_build ${mode} "${ks}" ${count} ${pop} ${tests_str} ${jopt} ${tests_run} ${cmake_cache} ${plugin}
 fi
 
