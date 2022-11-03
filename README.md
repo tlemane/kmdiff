@@ -57,7 +57,7 @@ brew install gsl lapack openblas bzip2 zlib
 
 </details>
 
-For conveniance, all kmdiff other build dependencies are included in [thirdparty directory](./thirdparty/).
+For convenience, all kmdiff other build dependencies are included in [thirdparty directory](./thirdparty/).
 
 ## Installation
 
