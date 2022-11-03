@@ -18,407 +18,348 @@
 
 #include <kmdiff/cli.hpp>
 
-namespace kmdiff
-{
-kmdiffCli::kmdiffCli(
-    const std::string& name,
-    const std::string& desc,
-    const std::string& version,
-    const std::string& authors)
-{
-  cli = std::make_shared<bc::Parser<1>>(bc::Parser<1>(name, desc, version, authors));
-  diff_opt = std::make_shared<struct diff_options>(diff_options{});
-  count_opt = std::make_shared<struct count_options>(count_options{});
-  popsim_opt = std::make_shared<struct popsim_options>(popsim_options{});
-  call_opt = std::make_shared<struct call_options>(call_options{});
-  info_cli(cli);
-  popsim_cli(cli, popsim_opt);
-  count_cli(cli, count_opt);
-  diff_cli(cli, diff_opt);
-  call_cli(cli, call_opt);
-}
+namespace kmdiff {
 
-std::tuple<COMMAND, kmdiff_options_t> kmdiffCli::parse(int argc, char* argv[])
-{
-  try
+  kmdiffCli::kmdiffCli(
+      const std::string& name,
+      const std::string& desc,
+      const std::string& version,
+      const std::string& authors)
   {
-    (*cli).parse(argc, argv);
-  }
-  catch (const bc::ex::BCliError& e)
-  {
-    bc::utils::exit_bcli(e);
-    exit(EXIT_FAILURE);
+    cli = std::make_shared<bc::Parser<1>>(bc::Parser<1>(name, desc, version, authors));
+    diff_opt = std::make_shared<struct diff_options>(diff_options{});
+    count_opt = std::make_shared<struct count_options>(count_options{});
+    info_cli(cli);
+    count_cli(cli, count_opt);
+    diff_cli(cli, diff_opt);
   }
 
-  if (cli->is("diff"))
-    return std::make_tuple(COMMAND::DIFF, diff_opt);
-  else if (cli->is("count"))
-    return std::make_tuple(COMMAND::COUNT, count_opt);
-  else if (cli->is("popsim"))
-    return std::make_tuple(COMMAND::POPSIM, popsim_opt);
-  else if (cli->is("call"))
-    return std::make_tuple(COMMAND::CALL, call_opt);
-  else
-    return std::make_tuple(COMMAND::INFOS, count_opt);
-}
+  std::tuple<COMMAND, kmdiff_options_t> kmdiffCli::parse(int argc, char* argv[])
+  {
+    if (argc > 1 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h"))
+    {
+      cli->show_help();
+      exit(EXIT_FAILURE);
+    }
 
-void add_common(bc::cmd_t cmd, kmdiff_options_t options)
-{
-  cmd->add_group("common", "");
-  cmd->add_param("-t/--threads", "Number of threads.")
-      ->def("1")
-      ->meta("INT")
-      ->setter(options->nb_threads)
-      ->checker(bc::check::is_number);
-  cmd->add_param("-h/--help", "Show this message and exit.")
-      ->as_flag()
-      ->action(bc::Action::ShowHelp);
-  cmd->add_param("--version", "Show version and exit.")->as_flag()->action(bc::Action::ShowVersion);
-  cmd->add_param("-v/--verbose", "Verbosity level [DEBUG|INFO|WARNING|ERROR].")
-      ->meta("STR")
-      ->def("INFO")
-      ->checker(bc::check::f::in("DEBUG|INFO|WARNING|ERROR"))
-      ->setter(options->verbosity);
+    if (argc > 1 && (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v"))
+    {
+      std::cerr << fmt::format("kmdiff {}", KMD_PROJECT_VER) << std::endl;
+      exit(EXIT_FAILURE);
+    }
 
-#ifdef KMDIFF_DEV_MODE
-  cmd->add_group("dev options", "");
-  cmd->add_param("-s/--signal", "Signal to raise.")
-      ->checker(bc::check::is_number)
-      ->setter(options->signal);
-#endif
-}
+    try
+    {
+      (*cli).parse(argc, argv);
+    }
+    catch (const bc::ex::BCliError& e)
+    {
+      bc::utils::exit_bcli(e);
+      exit(EXIT_FAILURE);
+    }
 
-kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t options)
-{
-  bc::cmd_t count_cmd = cli->add_command("count", "Count k-mers with kmtricks.");
-
-  count_cmd->add_param("-f/--file", "fof that contains path of read files")
-      ->checker(bc::check::is_file)
-      ->meta("FILE")
-      ->setter(options->file);
-
-  count_cmd->add_param("-d/--run-dir", "runtime directory")->meta("DIR")->setter(options->dir);
-
-  int max = requiredK<DEF_MAX_KMER>::value / 2;
-  int min = max / 2;
-  count_cmd->add_param("-k/--kmer-size", fmt::format("size of k-mers [{}, {}]", min, max))
-      ->checker(bc::check::is_number)
-      ->checker(bc::check::f::range(min, max))
-      ->setter(options->kmer_size)
-      ->def("31")
-      ->meta("INT");
-
-  count_cmd->add_param("-c/--count-abundance-min", "min abundance for solid k-mers")
-      ->checker(bc::check::is_number)
-      ->setter(options->abundance_min)
-      ->def("1")
-      ->meta("INT");
-
-  count_cmd->add_param("-m/--max-memory", "max memory per core (in mb)")
-      ->checker(bc::check::is_number)
-      ->setter(options->memory)
-      ->def("4000")
-      ->meta("INT");
-
-  count_cmd->add_group("advanced performance tweaks", {});
-
-  count_cmd->add_param("--minimizer-type", "minimizer type (0=lexi, 1=freq)")
-      ->checker(bc::check::f::range(0, 1))
-      ->setter(options->minimizer_type)
-      ->def("0")
-      ->meta("INT");
-
-  count_cmd->add_param("--minimizer-size", "size of minimizer")
-      ->checker(bc::check::is_number)
-      ->setter(options->minimizer_size)
-      ->def("10")
-      ->meta("INT");
-
-  count_cmd->add_param("--repartition-type", "minimizer repartition (0=unordered, 1=ordered)")
-      ->checker(bc::check::f::range(0, 1))
-      ->setter(options->repartition_type)
-      ->def("0")
-      ->meta("INT");
-
-  count_cmd->add_param("--nb-partitions", "number of partitions (0=auto)")
-      ->checker(bc::check::is_number)
-      ->setter(options->nb_partitions)
-      ->def("4")
-      ->meta("INT");
-
-  add_common(count_cmd, options);
-
-  return options;
-}
-
-kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t options)
-{
-  bc::cmd_t diff_cmd = cli->add_command("diff", "Differential k-mers analysis.");
-
-  auto is_kmtricks_dir = [](const std::string& p,
-                            const std::string& v) -> bc::check::checker_ret_t {
-    return std::make_tuple(
-        fs::exists(fmt::format("{}/config.log", v)),
-        fmt::format("{} {} : Not a kmtricks runtime directory.", p, v));
-  };
-
-  diff_cmd->add_param("--km-run", "kmtricks run directory.")
-      ->meta("DIR")
-      ->checker(bc::check::is_dir)
-      ->checker(is_kmtricks_dir)
-      ->setter(options->kmtricks_dir);
-
-  diff_cmd->add_param("-o/--output-dir", "output directory.")
-      ->meta("DIR")
-      ->setter(options->output_directory)
-      ->def("./output");
-
-  diff_cmd->add_param("--nb-controls", "Number of controls.")
-      ->meta("INT")
-      ->checker(bc::check::is_number)
-      ->setter(options->nb_controls);
-
-  diff_cmd->add_param("--nb-cases", "Number of cases.")
-      ->meta("INT")
-      ->checker(bc::check::is_number)
-      ->setter(options->nb_cases);
-
-  diff_cmd->add_param("--significance", "Significance threshold.")
-      ->meta("FLOAT")
-      ->checker(bc::check::is_number)
-      ->checker(bc::check::f::range(0.0, 1.0))
-      ->setter(options->threshold)
-      ->def("0.05");
-
-  auto corr_setter = [options](const std::string& v) {
-    if (v == "bonf")
-      options->correction = CorrectionType::BONFERRONI;
-    else if (v == "bh")
-      options->correction = CorrectionType::BENJAMINI;
+    if (cli->is("diff"))
+      return std::make_tuple(COMMAND::DIFF, diff_opt);
+    if (cli->is("count"))
+      return std::make_tuple(COMMAND::COUNT, count_opt);
     else
-      options->correction = CorrectionType::NOTHING;
-  };
+      return std::make_tuple(COMMAND::INFOS, count_opt);
+  }
 
-  diff_cmd->add_param("-c/--correction", "Significance correction.")
-      ->meta("STR")
-      ->def("bonf")
-      ->checker(bc::check::f::in("bonf|bh|nothing"))
-      ->setter_c(corr_setter);
+  void add_common(bc::cmd_t cmd, kmdiff_options_t options)
+  {
+    cmd->add_group("common", "");
+    cmd->add_param("-t/--threads", "number of threads.")
+        ->def(std::to_string(std::thread::hardware_concurrency()))
+        ->meta("INT")
+        ->setter(options->nb_threads)
+        ->checker(bc::check::is_number);
+    cmd->add_param("-h/--help", "show this message and exit.")
+        ->as_flag()
+        ->action(bc::Action::ShowHelp);
+    cmd->add_param("--version", "show version and exit.")->as_flag()->action(bc::Action::ShowVersion);
+    cmd->add_param("-v/--verbose", "Verbosity level [debug|info|warning|error].")
+        ->meta("STR")
+        ->def("info")
+        ->checker(bc::check::f::in("debug|info|warning|error"))
+        ->setter(options->verbosity);
+  }
 
-  diff_cmd->add_param("--kff-output", "Output significant k-mers in kff format.")
-      ->as_flag()
-      ->setter(options->kff);
+  kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t options)
+  {
+    bc::cmd_t count_cmd = cli->add_command("count", "Count k-mers with kmtricks.");
 
-  auto memory_warn = [](){
-    spdlog::warn("--in-memory: all significants k-mers will live in memory.");
-  };
-  diff_cmd->add_param("--in-memory", "Perform correction in memory.")
-      ->as_flag()
-      ->setter(options->in_memory)
-      ->callback(memory_warn);
+    count_cmd->add_param("-f/--file", "fof that contains path of read files")
+        ->checker(bc::check::is_file)
+        ->meta("FILE")
+        ->setter(options->file);
 
-  diff_cmd->add_param("--seq-control", "Fasta with expected control sv sequences.")
-      ->meta("FILE")
-      ->def("")
-      ->setter(options->seq_control);
+    count_cmd->add_param("-d/--run-dir", "output directory.")->meta("DIR")->setter(options->dir);
 
-  diff_cmd->add_param("--seq-case", "Fasta with expected case sv sequences.")
-      ->meta("FILE")
-      ->def("")
-      ->setter(options->seq_case);
+    count_cmd->add_param("-k/--kmer-size", fmt::format("size of k-mers [{}, {}]", 8, KL[KMD_KMERN-1]-1))
+        ->def("31")
+        ->checker(bc::check::f::range(8, KL[KMD_KMERN-1]-1))
+        ->setter(options->kmer_size)
+        ->meta("INT");
 
-  add_common(diff_cmd, options);
+    count_cmd->add_param("-c/--hard-min", "min abundance to keep a k-mer")
+        ->checker(bc::check::is_number)
+        ->setter(options->abundance_min)
+        ->def("1")
+        ->meta("INT");
 
-  return options;
-}
+    count_cmd->add_param("-r/--recurrence-min", "min recurrence to keep a k-mer")
+        ->def("1")
+        ->meta("INT")
+        ->checker(bc::check::is_number)
+        ->setter(options->recurrence_min);
 
-void info_cli(std::shared_ptr<bc::Parser<1>> cli)
-{
-  bc::cmd_t info_cmd = cli->add_command("infos", "Show build infos.");
-}
+    count_cmd->add_group("advanced performance tweaks", {});
 
-kmdiff_options_t popsim_cli(std::shared_ptr<bc::Parser<1>> cli, popsim_options_t options)
-{
-  bc::cmd_t popsim_cmd = cli->add_command("popsim", "Simulate population.");
+    count_cmd->add_param("--minimizer-type", "minimizer type (0=lexi, 1=freq)")
+        ->checker(bc::check::f::range(0, 1))
+        ->setter(options->minimizer_type)
+        ->def("0")
+        ->meta("INT");
 
-  popsim_cmd->add_param("-r/--reference", "Reference genome.")
-      ->meta("FILE")
-      ->checker(bc::check::seems_fastx)
-      ->checker(bc::check::is_file)
-      ->setter(options->reference);
+    count_cmd->add_param("--minimizer-size", "size of minimizer")
+        ->checker(bc::check::is_number)
+        ->setter(options->minimizer_size)
+        ->def("10")
+        ->meta("INT");
 
-  popsim_cmd->add_param("-o/--output-dir", "Output directory.")
-      ->meta("DIR")
-      ->setter(options->output_directory);
+    count_cmd->add_param("--repartition-type", "minimizer repartition (0=unordered, 1=ordered)")
+        ->checker(bc::check::f::range(0, 1))
+        ->setter(options->repartition_type)
+        ->def("0")
+        ->meta("INT");
 
-  popsim_cmd->add_param("--kmer-size", "Size of k-mers.")
+    count_cmd->add_param("--nb-partitions", "number of partitions (0=auto)")
+        ->checker(bc::check::is_number)
+        ->setter(options->nb_partitions)
+        ->def("0")
+        ->meta("INT");
+
+    add_common(count_cmd, options);
+
+    return options;
+  }
+
+  kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t options)
+  {
+    bc::cmd_t diff_cmd = cli->add_command("diff", "Differential k-mers analysis.");
+
+    auto is_kmtricks_dir = [](const std::string& p,
+                              const std::string& v) -> bc::check::checker_ret_t {
+      return std::make_tuple(
+          fs::exists(fmt::format("{}/kmtricks.fof", v)),
+          fmt::format("{} {} : Not a kmtricks runtime directory.", p, v));
+    };
+
+    diff_cmd->add_param("-d/--km-run", "kmtricks run directory.")
+        ->meta("DIR")
+        ->checker(bc::check::is_dir)
+        ->checker(is_kmtricks_dir)
+        ->setter(options->kmtricks_dir);
+
+    diff_cmd->add_param("-o/--output-dir", "output directory.")
+        ->meta("DIR")
+        ->setter(options->output_directory)
+        ->def("./kmdiff_output");
+
+    diff_cmd->add_param("-1/--nb-controls", "number of controls.")
+        ->meta("INT")
+        ->checker(bc::check::is_number)
+        ->setter(options->nb_controls);
+
+    diff_cmd->add_param("-2/--nb-cases", "number of cases.")
+        ->meta("INT")
+        ->checker(bc::check::is_number)
+        ->setter(options->nb_cases);
+
+    auto sign_check = [](const std::string& p, const std::string& v) -> bc::check::checker_ret_t {
+      std::istringstream vs(v); double vd;
+      try { vs >> vd; }
+      catch (...) { return std::make_tuple(false, fmt::format("{} {}: Not a number!", p, v)); }
+
+      bool in = true;
+      if (vd < 0.0 || vd > 0.5)
+        in = false;
+      return std::make_tuple(in, fmt::format("Not in range [0.0, 0.5]"));
+    };
+
+    diff_cmd->add_param("-s/--significance", "significance threshold.")
+        ->meta("FLOAT")
+        ->checker(sign_check)
+        ->setter(options->threshold)
+        ->def("0.05");
+
+    diff_cmd->add_param("-u/--cutoff", "Divide the significance threshold by N.\n" \
+               "                        Since a large number of k-mers are tested, k-mers with p-values too close to the significance\n" \
+               "                        threshold will not pass the last steps of correction.\n" \
+               "                        It allows to discard some k-mers a bit earlier and thus save space and time.")
       ->meta("INT")
       ->checker(bc::check::is_number)
-      ->setter(options->kmer_size);
+      ->setter(options->cutoff)
+      ->def("100000");
 
-  popsim_cmd->add_group("SVs", "");
+    auto corr_setter = [options](const std::string& v) {
+      if (v == "bonferroni")
+        options->correction = CorrectionType::BONFERRONI;
+      else if (v == "benjamini")
+        options->correction = CorrectionType::BENJAMINI;
+      else if (v == "sidak")
+        options->correction = CorrectionType::SIDAK;
+      else if (v == "holm")
+        options->correction = CorrectionType::HOLM;
+      else
+        options->correction = CorrectionType::NOTHING;
+    };
 
-  popsim_cmd->add_param("--mean-sv-len", "SVs mean length.")
-      ->meta("INT")
-      ->def("200")
-      ->checker(bc::check::is_number)
-      ->setter(options->mean_sv_len);
+    bc::param_t cp = diff_cmd->add_param("-c/--correction",
+                                         "significance correction. (bonferroni|benjamini|sidak|holm|disabled)")
+        ->meta("STR")
+        ->def("bonferroni")
+        ->checker(bc::check::f::in("bonferroni|benjamini|sidak|holm|disabled"))
+        ->setter_c(corr_setter);
 
-  popsim_cmd->add_param("--sd-sv-len", "SVs sd length.")
-      ->meta("INT")
-      ->def("10")
-      ->checker(bc::check::is_number)
-      ->setter(options->sd_sv_len);
+    auto correction_warn = [cp](){
+      if (cp->value() == "benjamini" || cp->value() == "holm")
+        spdlog::warn(fmt::format("-c/--correction {}: all significants k-mers will live in memory.", cp->value()));
+    };
 
-  popsim_cmd->add_group("controls", "control parameters");
+    cp->callback(correction_warn);
 
-  popsim_cmd->add_param("--nb-controls", "Number of controls")
-      ->meta("INT")
-      ->def("10")
-      ->checker(bc::check::f::range(1, 100))
-      ->setter(options->nb_controls);
+    diff_cmd->add_param("-f/--kff-output", "output significant k-mers in kff format.")
+        ->as_flag()
+        ->setter(options->kff);
 
-  popsim_cmd->add_param("--controls-pool-size", "Number of SVs in control population.")
-      ->meta("INT")
-      ->def("500")
-      ->checker(bc::check::is_number)
-      ->setter(options->nb_sv_controls);
+    auto memory_warn = [](){
+      spdlog::warn("-m/--in-memory: all significants k-mers will live in memory.");
+    };
+    diff_cmd->add_param("-m/--in-memory", "in-memory correction.")
+        ->as_flag()
+        ->setter(options->in_memory)
+        ->callback(memory_warn);
 
-  popsim_cmd->add_param("--controls-types", "")
-      ->meta("STR")
-      ->def("INS:DEL:INV")
-      ->setter(options->type_sv_controls);
+    diff_cmd->add_param("-r/--cpr", "compress intermediate files.")
+        ->as_flag()
+        ->setter(options->cpr)
+        ->hide();
 
-  popsim_cmd->add_param("--controls-ratio", "")
-      ->meta("STR")
-      ->def("40:40:20")
-      ->setter(options->ratio_sv_controls);
+    diff_cmd->add_param("--keep-tmp", "keep tmp files.")
+        ->as_flag()
+        ->setter(options->keep_tmp);
 
-  popsim_cmd->add_param("--controls-sv-per-indiv", "Number of SVs per individual in controls.")
-      ->meta("INT")
-      ->def("300")
-      ->checker(bc::check::is_number)
-      ->setter(options->mean_sv_per_indiv_controls);
+    #ifdef WITH_PLUGIN
+      diff_cmd->add_group("custom model", "");
 
-  popsim_cmd->add_param("--controls-sd-per-indiv", "Standard deviation.")
-      ->meta("INT")
-      ->def("10")
-      ->checker(bc::check::is_number)
-      ->setter(options->sd_sv_per_indiv_controls);
+      diff_cmd->add_param("--cmodel", "path to model shared library.")
+        ->meta("STR")
+        ->def("")
+        ->checker(bc::check::f::ext("so|dylib"))
+        ->setter(options->model_lib_path);
 
-  popsim_cmd->add_param("--prob-case", "")
-      ->meta("FLOAT")
-      ->def("0.01")
-      ->checker(bc::check::f::range(0.0, 0.5))
-      ->setter(options->prob_case);
+      diff_cmd->add_param("--config", "model config")
+        ->meta("STR")
+        ->def("")
+        ->setter(options->model_config);
+    #endif
 
-  popsim_cmd->add_group("cases", "case parameters");
+    #ifdef WITH_POPSTRAT
+      diff_cmd->add_group("population stratification", "");
 
-  popsim_cmd->add_param("--nb-cases", "")
-      ->meta("INT")
-      ->def("10")
-      ->checker(bc::check::f::range(1, 100))
-      ->setter(options->nb_cases);
+      diff_cmd->add_param("--pop-correction", "apply correction for population stratification.")
+          ->as_flag()
+          ->setter(options->pop_correction);
 
-  popsim_cmd->add_param("--cases-pool-size", "Number of SVs in case population.")
-      ->meta("INT")
-      ->def("500")
-      ->checker(bc::check::is_number)
-      ->setter(options->nb_sv_cases);
-
-  popsim_cmd->add_param("--cases-types", "")
-      ->meta("STR")
-      ->def("INS:DEL:INV")
-      ->setter(options->type_sv_cases);
-
-  popsim_cmd->add_param("--cases-ratio", "")
-      ->meta("STR")
-      ->def("40:40:20")
-      ->setter(options->ratio_sv_cases);
-
-  popsim_cmd->add_param("--cases-sv-per-indiv", "Number of SVs per individual in cases.")
-      ->meta("INT")
-      ->def("300")
-      ->checker(bc::check::is_number)
-      ->setter(options->mean_sv_per_indiv_cases);
-
-  popsim_cmd->add_param("--cases-sd-per-indiv", "Standard deviation.")
-      ->meta("INT")
-      ->def("10")
-      ->checker(bc::check::is_number)
-      ->setter(options->sd_sv_per_indiv_cases);
-
-  popsim_cmd->add_param("--prob-control", "")
-      ->meta("FLOAT")
-      ->def("0.01")
-      ->checker(bc::check::f::range(0.0, 0.5))
-      ->setter(options->prob_control);
-
-  popsim_cmd->add_group("reads", "wgsim params");
-
-  popsim_cmd->add_param("--read-size", "Size of reads.")
-      ->meta("INT")
-      ->def("100")
-      ->checker(bc::check::is_number)
-      ->setter(options->read_size);
-
-  popsim_cmd->add_param("-c/--coverage", "Sequencing coverage.")
-      ->meta("INT")
-      ->def("10")
-      ->checker(bc::check::is_number)
-      ->setter(options->coverage);
-
-  popsim_cmd->add_param("-e/--error-rate", "Sequencing error rate.")
-      ->meta("FLOAT")
-      ->def("0.01")
-      ->checker(bc::check::f::range(0.0, 1.0))
-      ->setter(options->error_rate);
-
-  popsim_cmd->add_param("-m/--mutation-rate", "Mutation rate.")
-      ->meta("FLOAT")
-      ->def("0.0")
-      ->checker(bc::check::f::range(0.0, 1.0))
-      ->setter(options->mutation_rate);
-
-  popsim_cmd->add_param("-i/--indel-fraction", "Fraction of indels.")
-      ->meta("FLOAT")
-      ->def("0.0")
-      ->checker(bc::check::f::range(0.0, 1.0))
-      ->setter(options->indel_fraction);
-
-  popsim_cmd->add_param("--extend", "Extend probability.")
-      ->meta("FLOAT")
-      ->def("0.0")
-      ->checker(bc::check::f::range(0.0, 1.0))
-      ->setter(options->extend);
-
-  add_common(popsim_cmd, options);
-
-  return options;
-}
-
-kmdiff_options_t call_cli(std::shared_ptr<bc::Parser<1>> cli, call_options_t options)
-{
-  bc::cmd_t call_cmd = cli->add_command("call", "SVs calling from k-mers.");
-
-  call_cmd->add_param("-r/--reference", "Reference genome.")
+      diff_cmd->add_param("--gender", "gender file, one sample per line with the id and the gender (M,F,U), space-separated.")
           ->meta("FILE")
-          ->checker(bc::check::seems_fastx)->checker(bc::check::is_file)
-          ->setter(options->reference);
+          ->def("")
+          ->checker(bc::check::is_file)
+          ->setter(options->gender);
 
-  call_cmd->add_param("-d/--diff-dir", fmt::format("Output directory of {} diff.", PROJECT_NAME))
-           ->meta("DIR")
-           ->checker(bc::check::is_dir)
-           ->setter(options->directory);
+      diff_cmd->add_param("--kmer-pca", "proportion of k-mers used for PCA (in [0.0, 0.05]).")
+          ->meta("FLOAT")
+          ->def("0.001")
+          ->checker(bc::check::f::range(0.0, 0.05))
+          ->setter(options->kmer_pca);
 
-  call_cmd->add_param("--seed-size", "Size of seeds for mapping.")
+      auto ploidy_setter = [options](const std::string& v) {
+        options->ploidy = bc::utils::lexical_cast<size_t>(v);
+        if (options->ploidy == 2) options->is_diploid = true;
+        else options->is_diploid = false;
+      };
+
+      diff_cmd->add_param("--ploidy", "ploidy level.")
           ->meta("INT")
-          ->def("10")
+          ->def("2")
           ->checker(bc::check::is_number)
-          ->setter(options->seed_size);
+          ->setter_c(ploidy_setter);
 
-  add_common(call_cmd, options);
+      diff_cmd->add_param("--n-pc", "number of principal components (in [2, 10]).")
+          ->meta("INT")
+          ->def("2")
+          ->checker(bc::check::f::range(2, 10))
+          ->setter(options->npc);
 
-  return options;
-}
-};  // namespace kmdiff
+      diff_cmd->add_param("--covariates", "covariates file.")
+          ->meta("FILE")
+          ->def("")
+          ->checker(bc::check::is_file)
+          ->setter(options->covariates)
+          ->hide();
+    #endif
+
+    #if KMD_DEV_MODE
+      diff_cmd->add_group("dev", "");
+    #else
+      diff_cmd->add_group("dev", "")->hide();
+    #endif
+
+    diff_cmd->add_param("--learning-rate", "learning rate.")
+        ->meta("FLOAT")
+        ->def("0")
+        ->checker(bc::check::f::range(0.0, 1.0))
+        ->setter(options->learning_rate);
+
+    diff_cmd->add_param("--max-iteration", "max iteration.")
+        ->meta("INT")
+        ->def("0")
+        ->checker(bc::check::is_number)
+        ->setter(options->max_iteration);
+
+    diff_cmd->add_param("--epsilon", "epsilon.")
+        ->meta("INT")
+        ->def("0")
+        ->setter(options->epsilon);
+
+    diff_cmd->add_param("--stand", "standardization.")
+        ->as_flag()
+        ->setter(options->stand);
+
+    diff_cmd->add_param("--irls", "use irls algorithm.")
+        ->as_flag()
+        ->setter(options->irls);
+
+    diff_cmd->add_param("--random-seed", "random seed for pca sampling (deterministic only with 1 thread).")
+        ->meta("INT")
+        ->def("0")
+        ->setter(options->seed);
+
+    diff_cmd->add_param("--log-factorial", "size of precomputed table.")
+        ->meta("INT")
+        ->def("10000")
+        ->setter(options->log_size);
+
+    add_common(diff_cmd, options);
+
+    return options;
+  }
+
+  void info_cli(std::shared_ptr<bc::Parser<1>> cli)
+  {
+    bc::cmd_t info_cmd = cli->add_command("infos", "Show build infos.");
+  }
+
+} // end of namespace kmdiff

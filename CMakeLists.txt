@@ -1,43 +1,85 @@
 cmake_minimum_required(VERSION 3.13.0)
-project(kmdiff VERSION 0.0.1 LANGUAGES C CXX)
+project(kmdiff VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-option(DEV_MODE "Dev mode" OFF)
-option(COMPILE_TESTS "Compile tests" OFF)
-option(BUILD_KMTRICKS_FULL "Build kmtricks binaries" OFF)
-option(MAKE_PACKAGE "Build package" OFF)
+option(WITH_KMTRICKS "Build kmtricks" ON)
+option(WITH_TESTS "Build tests" OFF)
+option(WITH_POPSTRAT "Build with population stratification support" ON)
+option(WITH_PLUGIN "Build plugins" OFF)
+
 option(CONDA_BUILD "Build inside conda env" OFF)
+option(DEV_BUILD "Dev build" OFF)
+
+option(STATIC_BUILD "Static build" OFF)
+option(NATIVE_BUILD "Build with -march=native" ON)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+if (WITH_POPSTRAT)
+  include(Depends)
+  find_dependencies()
+endif()
+
 message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
-set(IS_CONDA_BUILD No)
-if (CONDA_BUILD)
-  set(IS_CONDA_BUILD Yes)
-endif()
-
-set(PROJECT_DESCRIPTION "kmdiff - Differential analysis for k-mers.")
-set(CONTACT "teo.lemane@inria.fr")
+set(PROJECT_DESCRIPTION "kmdiff - Differential k-mers analysis.")
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
-find_package(ZLIB REQUIRED)
+add_library(build_type_flags INTERFACE)
+target_compile_options(build_type_flags INTERFACE
+  $<$<CONFIG:Debug>:-O0 -g>
+  $<$<CONFIG:Release>:-O3 -DNDEBUG>
+  $<$<CONFIG:Profile>:-O3 -ggdb3 -DNDEBUG -fno-inline>
+  $<$<CONFIG:Coverage>:-O0 -g --coverage>
+)
 
-set(DEF_MAX_KMER 32)
-set(DEF_MAX_COUNT 256)
-
-if (DEV_MODE)
-  add_compile_definitions(KMDIFF_DEV_MODE)
+if (NATIVE_BUILD)
+  target_compile_options(build_type_flags INTERFACE "-march=native")
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+add_library(warning_flags INTERFACE)
+target_compile_options(warning_flags INTERFACE
+  "-Wall"
+  "-Wextra"
+  "-Wno-char-subscripts"
+  "-Wno-unused-parameter"
+)
+
+add_library(headers INTERFACE)
+target_include_directories(headers INTERFACE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_BINARY_DIR}/include
+)
+
+add_library(links INTERFACE)
+target_link_libraries(links INTERFACE pthread dl)
+
+add_library(deps INTERFACE)
+add_library(tests INTERFACE)
+
+if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0.0)
+  link_libraries(stdc++fs)
+endif()
+
+if (NOT MAX_C)
+  set(MAX_C 4294967295)
+endif()
+
+if (NOT KMER_LIST)
+  set (KMER_LIST "32 64 96 128")
+endif()
+
+string(REPLACE " " ";" KMER_LIST_ ${KMER_LIST})
+string(REPLACE " " "," KMER_LIST ${KMER_LIST})
+list(LENGTH KMER_LIST_ KMER_N)
+
+add_compile_definitions(DMAX_C=${MAX_C})
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(thirdparty)
 
@@ -53,77 +95,58 @@ get_sha1(${THIRDPARTY_DIR}/lz4 LZ4_SHA1)
 get_sha1(${THIRDPARTY_DIR}/robin-hood-hashing ROBIN_SHA1)
 get_sha1(${THIRDPARTY_DIR}/spdlog SPDLOG_SHA1)
 get_sha1(${THIRDPARTY_DIR}/xxHash XXHASH_SHA1)
-get_sha1(${THIRDPARTY_DIR}/wgsim WGSIM_SHA1)
+get_sha1(${THIRDPARTY_DIR}/indicators INDICATORS_SHA1)
 
-set(HTSLIB_SHA1 "8cab518f97bbdf43165320c3a4bdef1e9a42893a")
 configure_file("${PROJECT_SOURCE_DIR}/include/kmdiff/config.h.in" ${PROJECT_BINARY_DIR}/include/kmdiff/config.hpp)
-
-set(THIRDPARTY_BUILD_DIR ${PROJECT_BINARY_DIR}/thirdparty)
-
-set(SPD_INCLUDE ${THIRDPARTY_DIR}/spdlog/include)
-set(ROBIN_INCLUDE ${THIRDPARTY_DIR}/robin-hood-hashing/src/include)
-set(KMTRICKS_INCLUDE ${THIRDPARTY_DIR}/kmtricks/libs/ ${THIRDPARTY_DIR}/kmtricks/thirdparty/lz4/lib)
-set(FMT_INCLUDE ${THIRDPARTY_DIR}/fmt/include)
-set(BCLI_INCLUDE ${THIRDPARTY_DIR}/bcli/include)
-set(XXHASH_INCLUDE ${THIRDPARTY_DIR}/xxHash/)
-set(GTEST_INCLUDE ${THIRDPARTY_DIR}/googletest/googletest/include)
-set(LZ4_INCLUDE ${THIRDPARTY_DIR}/lz4)
-set(ALGLIB_INCLUDE ${THIRDPARTY_DIR}/alglib/src)
-set(CONFIG_INCLUDE ${PROJECT_BINARY_DIR}/include)
-set(KSEQPP_INCLUDE ${THIRDPARTY_DIR}/kseqpp/include ${THIRDPARTY_DIR}/kseqpp/include/kseq++)
-set(WGSIM_INCLUDE ${THIRDPARTY_DIR}/wgsim)
-set(KFF_INCLUDE ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
-set(HTSLIB_INCLUDE ${THIRDPARTY_BUILD_DIR}/HTSLIB/src/HTSLIB)
-set(KMTRICKS_LIB ${THIRDPARTY_DIR}/kmtricks/bin/lib)
-set(FMT_LIB ${THIRDPARTY_BUILD_DIR}/FMT/src/FMT-build/)
-set(XXHASH_LIB ${THIRDPARTY_BUILD_DIR}/XXHASH/src/XXHASH-build)
-set(GTEST_LIB ${THIRDPARTY_BUILD_DIR}/GOOGLE_TEST/src/GOOGLE_TEST-build/lib)
-set(ALGLIB_LIB ${THIRDPARTY_BUILD_DIR}/ALGLIB/src/ALGLIB-build)
-set(WGSIM_LIB ${THIRDPARTY_BUILD_DIR}/WGSIM/src/WGSIM-build)
-set(KFF_LIB ${THIRDPARTY_BUILD_DIR}/KFF/src/KFF-build)
-set(HTSLIB_LIB ${THIRDPARTY_BUILD_DIR}/HTSLIB/src/HTSLIB)
-
-set(INCLUDES ${SPD_INCLUDE} ${KMTRICKS_INCLUDE} ${FMT_INCLUDE} ${BCLI_INCLUDE} ${CONFIG_INCLUDE} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include ${GTEST_INCLUDE} ${ROBIN_INCLUDE} ${XXHASH_INCLUDE} ${KSEQPP_INCLUDE} ${ALGLIB_INCLUDE} ${WGSIM_INCLUDE} ${KFF_INCLUDE} ${HTSLIB_INCLUDE} ${ZLIB_INCLUDE_DIRS})
-
-set(DEPS XXHASH SPDLOG FMT KMTRICKS ALGLIB LZ4 KSEQPP WGSIM KFF HTSLIB)
-
-include_directories(${INCLUDES})
-link_directories(${FMT_LIB} ${XXHASH_LIB} ${KMTRICKS_LIB} ${ALGLIB_LIB} ${WGSIM_LIB} ${KFF_LIB} ${HTSLIB_LIB})
-
-set(HTS_LINK "${HTSLIB_LIB}/libhts.a")
-
-link_libraries(fmt xxhash kmtricks lz4 pthread dl alglib wgsim kff ${HTS_LINK} ZLIB::ZLIB)
 
 add_subdirectory(include)
 add_subdirectory(src)
 
-if (COMPILE_TESTS)
-  message(STATUS "COMPILE_TESTS=ON - Add target test.")
+if (WITH_PLUGIN)
+  add_subdirectory(plugins)
+endif()
+
+if (WITH_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Release" AND MAKE_PACKAGE)
-  message(STATUS "MAKE_PACKAGE=ON - Add target package.")
-  include(CPackConfig)
-endif()
-
-add_custom_target(end ALL
-        ${CMAKE_COMMAND} -E cmake_echo_color --cyan
-        "Binaries: ${PROJECT_SOURCE_DIR}/bin"
-        COMMENT "" )
-
-if (COMPILE_TESTS)
-  add_dependencies(end ${PROJECT_NAME} ${PROJECT_NAME}-tests)
-else()
-  add_dependencies(end ${PROJECT_NAME})
-endif()
-
-if (BUILD_KMTRICKS_FULL)
+if (WITH_KMTRICKS)
   add_custom_target(
-    copy_km
-    COMMAND cp ./thirdparty/kmtricks/bin/km* ./bin
-    COMMAND cp ./thirdparty/kmtricks/kmtricks.py ./bin
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+    copy_km ALL
+    DEPENDS KMTRICKS
+    COMMAND cp ./thirdparty/kmtricks/bin/kmtricks ${CMAKE_BINARY_DIR}/bin
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
   add_dependencies(copy_km KMTRICKS)
 endif()
+
+if (WITH_POPSTRAT)
+  if (NOT EXISTS ${CMAKE_BINARY_DIR}/bin/smartpca)
+    add_custom_target(
+      copy_hawk ALL
+      DEPENDS HAWK
+      COMMAND cp ./thirdparty/HAWK/src/HAWK-build/smartpca ${CMAKE_BINARY_DIR}/bin
+      COMMAND cp ../thirdparty/hawk/EIG6.0.1-Hawk/bin/evec2pca.perl ${CMAKE_BINARY_DIR}/bin
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    add_dependencies(copy_hawk HAWK)
+  endif()
+  add_custom_target(
+    clean_hawk ALL
+    DEPENDS HAWK
+    COMMAND make clobber
+    COMMAND make clean
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/thirdparty/hawk/EIG6.0.1-Hawk/src)
+  add_dependencies(clean_hawk HAWK)
+endif()
+
+include(GNUInstallDirs)
+install (TARGETS ${PROJECT_NAME}-bin DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (FILES ${CMAKE_BINARY_DIR}/bin/smartpca
+         DESTINATION ${CMAKE_INSTALL_BINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+install (FILES ${CMAKE_BINARY_DIR}/bin/evec2pca.perl
+         DESTINATION ${CMAKE_INSTALL_BINDIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+
+include(CPackConfig)

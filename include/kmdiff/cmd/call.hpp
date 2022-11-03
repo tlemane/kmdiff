@@ -36,7 +36,9 @@ struct call_options : kmdiff_options
 {
   std::string directory;
   std::string reference;
+  size_t      kmer_size;
   size_t      seed_size;
+  size_t      c_seed_size;
 
   std::string display()
   {
@@ -44,7 +46,9 @@ struct call_options : kmdiff_options
     ss << this->global_display();
     RECORD(ss, directory);
     RECORD(ss, reference);
+    RECORD(ss, kmer_size);
     RECORD(ss, seed_size);
+    RECORD(ss, c_seed_size);
     return ss.str();
   }
 };

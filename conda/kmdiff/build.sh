@@ -20,10 +20,14 @@
 
 mkdir build-conda
 cd build-conda
-cmake .. -DCONDA_BUILD=ON
+
+cmake .. -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DWITH_KMTRICKS=OFF -DWITH_POPSTRAT=ON -DCONDA_BUILD=ON
+
 make -j4
-cd .. 
 
 mkdir -p $PREFIX/bin
 
-cp -r ./bin/kmdiff $PREFIX/bin
+cp -r ./build-conda/bin/kmdiff $PREFIX/bin
+cp -r ./build-conda/bin/smartpca $PREFIX/bin
+cp -r ./build-conda/bin/evec2pca.perl $PREFIX/bin
+

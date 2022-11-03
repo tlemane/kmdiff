@@ -18,50 +18,9 @@
 
 #pragma once
 
-// std
-#include <sstream>
-#include <string>
+#include <kmdiff/cmd/count_opt.hpp>
 
-// ext
-#include <spdlog/spdlog.h>
-
-// int
-#include <kmdiff/cmd/cmd_common.hpp>
-#include <kmdiff/config.hpp>
-#include <kmdiff/utils.hpp>
-
-namespace kmdiff
-{
-struct count_options : kmdiff_options
-{
-  std::string file;
-  std::string dir;
-  int kmer_size;
-  int abundance_min;
-  int memory;
-  int minimizer_type;
-  int minimizer_size;
-  int repartition_type;
-  int nb_partitions;
-
-  std::string display()
-  {
-    std::stringstream ss;
-    ss << this->global_display();
-    RECORD(ss, file);
-    RECORD(ss, dir);
-    RECORD(ss, kmer_size);
-    RECORD(ss, abundance_min);
-    RECORD(ss, memory);
-    RECORD(ss, minimizer_type);
-    RECORD(ss, minimizer_size);
-    RECORD(ss, repartition_type);
-    RECORD(ss, nb_partitions);
-    return ss.str();
-  }
-};
-
-using count_options_t = std::shared_ptr<struct count_options>;
+namespace kmdiff {
 
 void main_count(kmdiff_options_t options);
 

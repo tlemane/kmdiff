@@ -1,6 +1,8 @@
+{% set version = "1.0.0" %}
+
 package:
   name: kmdiff
-  version: "0.0.1"
+  version: {{ version }}
 
 source:
   git_url: https://github.com/tlemane/kmdiff
@@ -10,19 +12,26 @@ requirements:
     - {{ compiler('cxx') }}
     - make
     - cmake
-    - gxx_linux-64=9.3
+    - gsl
+    - openblas
+    - openblas-devel
+    - liblapacke
 
   host:
     - zlib
 
   run:
     - zlib
-    - gxx_linux-64=9.3
-    - kmtricks>=0.0.6
-    - python>=3.6
-    - bbmap>=38.90
+    - gsl
+    - openblas
+    - liblapacke
+    - kmtricks
 
 about:
   home: https://github.com/tlemane/kmdiff
   license: AGPL-3.0
   doc_url: https://github.com/tlemane/kmdiff
+
+extra:
+  recipe-maintainers:
+    - tlemane

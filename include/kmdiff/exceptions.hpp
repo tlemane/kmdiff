@@ -18,35 +18,52 @@
 
 #pragma once
 
-// std
 #include <stdexcept>
 #include <string>
 
 namespace kmdiff
 {
-class kmdiff_exception : public std::exception
-{
- private:
-  std::string name{"Base error"};
-  std::string msg{"Base error msg should never be printed"};
+  class kmdiff_exception : public std::exception
+  {
+   private:
+    std::string name{"Base error"};
+    std::string msg{"Base error msg should never be printed"};
 
- public:
-  kmdiff_exception(const std::string& name, const std::string& msg) : name(name), msg(msg) {}
-  std::string get_name() const { return name; }
-  std::string get_msg() const { return msg; }
-};
+   public:
+    kmdiff_exception(const std::string& name, const std::string& msg) : name(name), msg(msg) {}
+    std::string get_name() const { return name; }
+    std::string get_msg() const { return msg; }
+  };
 
-#define kmdiff_EXCEPTION(name)                                     \
-  class name : public kmdiff_exception                             \
-  {                                                              \
-   public:                                                       \
-    name(const std::string& msg) : kmdiff_exception(#name, msg) {} \
-  }
+  #define kmdiff_EXCEPTION(name)                                     \
+    class name : public kmdiff_exception                             \
+    {                                                                \
+     public:                                                         \
+      name(const std::string& msg) : kmdiff_exception(#name, msg) {} \
+    }
 
-kmdiff_EXCEPTION(BinaryNotFound);
-kmdiff_EXCEPTION(ExternalExecFailed);
-kmdiff_EXCEPTION(KmtricksFileNotFound);
-kmdiff_EXCEPTION(FileNotFound);
-kmdiff_EXCEPTION(ConfigError);
+  kmdiff_EXCEPTION(BinaryNotFound);
+  kmdiff_EXCEPTION(ExternalExecFailed);
+  kmdiff_EXCEPTION(KmtricksFileNotFound);
+  kmdiff_EXCEPTION(FileNotFound);
+  kmdiff_EXCEPTION(ConfigError);
+  kmdiff_EXCEPTION(IOError);
 
-};  // namespace kmdiff
+
+  kmdiff_EXCEPTION(VCFOpenError);
+  kmdiff_EXCEPTION(VCFHeaderError);
+
+  kmdiff_EXCEPTION(BEDOpenError);
+  kmdiff_EXCEPTION(BEDBadFormat);
+
+  kmdiff_EXCEPTION(BAMOpenError);
+  kmdiff_EXCEPTION(BAMHeaderError);
+
+  kmdiff_EXCEPTION(EigenStratError);
+
+  kmdiff_EXCEPTION(SingularError);
+
+  kmdiff_EXCEPTION(PluginError);
+
+}  // end of namespace kmdiff
+

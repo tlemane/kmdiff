@@ -17,21 +17,18 @@
  *****************************************************************************/
 
 #pragma once
-// std
+
 #include <memory>
 
-// ext
 #include <bcli/bcli.hpp>
 
-// int
 #include <kmdiff/cli/cli_common.hpp>
 #include <kmdiff/cmd/count.hpp>
 #include <kmdiff/config.hpp>
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
 
-namespace kmdiff
-{
-kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t options);
+namespace kmdiff {
 
-};  // namespace kmdiff
+  kmdiff_options_t count_cli(std::shared_ptr<bc::Parser<1>> cli, count_options_t options);
+
+} // end of namespace kmdiff
+

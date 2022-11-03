@@ -30,29 +30,35 @@
 
 #include <bcli/bcli.hpp>
 
-#define _KM_LIB_INCLUDE_
-#include <kmtricks/utilities.hpp>
-
 // int
 #include <kmdiff/exceptions.hpp>
+
+#define KMTRICKS_PUBLIC
+#include <kmtricks/io/fof.hpp>
 
 namespace fs = std::filesystem;
 
 namespace kmdiff
 {
-struct kmtricks_config
-{
-  size_t kmer_size{0};
-  size_t nb_partitions{0};
-};
 
-using kmtricks_config_t = struct kmtricks_config;
+  struct kmtricks_config
+  {
+    size_t kmer_size{0};
+    size_t nb_partitions{0};
+    size_t abundance_min{0};
+    std::string to_string() { return fmt::format("k={} n={} a={}", kmer_size, nb_partitions, abundance_min); }
+  };
 
-kmtricks_config_t get_kmtricks_config(const std::string& run_dir);
+  using part_paths_t = std::vector<std::vector<std::string>>;
+  using kmtricks_config_t = struct kmtricks_config;
 
-std::vector<std::string> get_fofs(const std::string& run_dir);
+  kmtricks_config_t get_kmtricks_config(const std::string& run_dir);
 
-std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
-    const std::string& run_dir, size_t nb_controls, size_t nb_cases);
+  km::Fof get_fofs(const std::string& run_dir);
 
-};  // namespace kmdiff
+  std::tuple<std::vector<size_t>, std::vector<size_t>> get_total_kmer(
+      const std::string& run_dir, size_t nb_controls, size_t nb_cases, size_t ab_min);
+
+  part_paths_t get_partition_paths(const std::string& kmdir, std::size_t nb_parts);
+
+} // end of namespace kmdiff

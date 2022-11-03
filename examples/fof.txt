@@ -1,0 +1,21 @@
+CONTROL0: data/control_0.fasta
+CONTROL1: data/control_1.fasta
+CONTROL2: data/control_2.fasta
+CONTROL3: data/control_3.fasta
+CONTROL4: data/control_4.fasta
+CONTROL5: data/control_5.fasta
+CONTROL6: data/control_6.fasta
+CONTROL7: data/control_7.fasta
+CONTROL8: data/control_8.fasta
+CONTROL9: data/control_9.fasta
+CASE0: data/case_0.fasta
+CASE1: data/case_1.fasta
+CASE2: data/case_2.fasta
+CASE3: data/case_3.fasta
+CASE4: data/case_4.fasta
+CASE5: data/case_5.fasta
+CASE6: data/case_6.fasta
+CASE7: data/case_7.fasta
+CASE8: data/case_8.fasta
+CASE9: data/case_9.fasta
+

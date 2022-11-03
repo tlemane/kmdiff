@@ -17,17 +17,16 @@
  *****************************************************************************/
 
 #pragma once
-// std
+
 #include <memory>
-// ext
 #include <bcli/bcli.hpp>
-// int
 #include <kmdiff/cmd/cmd_common.hpp>
 
-namespace kmdiff
-{
-using cli_t = std::shared_ptr<bc::Parser<1>>;
+namespace kmdiff {
 
-void add_common(bc::cmd_t cmd, kmdiff_options_t options);
+  using cli_t = std::shared_ptr<bc::Parser<1>>;
 
-};  // namespace kmdiff
+  void add_common(bc::cmd_t cmd, kmdiff_options_t options);
+
+} // end of namespace kmdiff
+

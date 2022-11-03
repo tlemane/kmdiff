@@ -15,7 +15,7 @@ TEST(kff, read_write)
     KffWriter f("./tests_tmp/test.kff", kmer_size);
     for (auto& s: vs)
     {
-      Kmer<32> k(s);
+      km::Kmer<32> k(s);
       f.write(k);
     }
     f.close();
@@ -24,7 +24,7 @@ TEST(kff, read_write)
   {
     KffReader f("./tests_tmp/test.kff", kmer_size);
     int i = 0;
-    while (std::optional<Kmer<32>> k = f.read<32>())
+    while (std::optional<km::Kmer<32>> k = f.read<32>())
     {
       EXPECT_EQ((*k).to_string(), vs[i]); i++;
     }

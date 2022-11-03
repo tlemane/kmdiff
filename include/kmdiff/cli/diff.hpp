@@ -32,12 +32,11 @@
 #include <kmdiff/cli/cli_common.hpp>
 #include <kmdiff/cmd/diff.hpp>
 #include <kmdiff/config.hpp>
-#include <kmdiff/model.hpp>
 
 namespace fs = std::filesystem;
 
-namespace kmdiff
-{
-kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t options);
+namespace kmdiff {
 
-};  // namespace kmdiff
+  kmdiff_options_t diff_cli(std::shared_ptr<bc::Parser<1>> cli, diff_options_t options);
+
+} // end of namespace kmdiff

@@ -1,0 +1,2 @@
+Control1 : ./fasta/control1.fasta
+Case1 : ./fasta/case1.fasta

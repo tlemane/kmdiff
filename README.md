@@ -1,44 +1,72 @@
 # kmdiff
 
 ![License](http://img.shields.io/:license-affero-blue.svg)
-![linux](https://github.com/tlemane/kmdiff/actions/workflows/linux.yml/badge.svg)
-![osx](https://github.com/tlemane/kmdiff/actions/workflows/osx.yml/badge.svg)
+[![kmdiff](https://github.com/tlemane/kmdiff/actions/workflows/kmdiff.yml/badge.svg)](https://github.com/tlemane/kmdiff/actions/workflows/kmdiff.yml)
 
-This is a work in progress, it is not yet fully usable.
+## Rationale
+
+kmdiff provides differential k-mers analysis between two populations (control and case). Each population is represented by a set of short-read sequencing. Outputs are differentially represented k-mers between controls and cases.
+
+Statistical methods used in kmdiff are from:
+* Rahman, Atif, Ingileif Hallgrímsdóttir, Michael Eisen, and Lior Pachter. "Association mapping from sequencing reads using k-mers." Elife 7 (2018): e32920. https://doi.org/10.7554/eLife.32920.001
+* Mehrab Z, Mobin J, Tahmid IA, Rahman A (2021) Efficient association mapping from k-mers—An application in finding sex-specific sequences. PLOS ONE 16(1): e0245058. https://doi.org/10.1371/journal.pone.0245058.
+* Patterson N, Price AL, Reich D (2006) Population Structure and Eigenanalysis. PLOS Genetics 2(12): e190. https://doi.org/10.1371/journal.pgen.0020190
+* Price, A., Patterson, N., Plenge, R. et al. Principal components analysis corrects for stratification in genome-wide association studies. Nat Genet 38, 904–909 (2006). https://doi.org/10.1038/ng1847
 
 ## Dependencies
 
 ### Build dependencies
 
-For convenience, all kmdiff build dependencies are included in [thirdparty directory](./thirdparty/).
+* [zlib](https://zlib.net)
+* [bzip2](https://www.sourceware.org/bzip2/)
 
-### Runtime depencencies
+ Population stratification correction needs:
+  * [GSL](https://www.gnu.org/software/gsl/)
+  * [OpenBLAS](https://www.openblas.net)
+  * [Lapacke](https://www.netlib.org/lapack/lapacke.html)
 
-* [kmtricks](https://github.com/tlemane/kmtricks) >= 0.0.6
-* [VISOR](https://davidebolo1993.github.io/visordoc/) - (only for **kmdiff popsim**)
-* [bbmap](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/) - (only for **kmdiff call**)
+<details><summary><strong>Ubuntu / Debian</strong></summary>
+
+<code>
+sudo apt-get install libgsl-dev libopenblas-dev liblapacke-dev libbz2-dev zlib1g-dev zlib1g
+</code>
+
+</details>
+
+<details><summary><strong>Fedora</strong></summary>
+
+<code>
+sudo dnf install openblas openblas-devel lapack lapack-devel gsl gsl-devel bzip2-devel
+</code>
+
+</details>
+
+<details><summary><strong>Arch</strong></summary>
+
+<code>
+sudo pacman -S lapack lapacke openblas gsl bzip2 zlib
+</code>
+
+</details>
+
+<details><summary><strong>macOS</strong></summary>
+
+<code>
+brew install gsl lapack openblas bzip2 zlib
+</code>
+
+</details>
+
+For convenience, all kmdiff other build dependencies are included in [thirdparty directory](./thirdparty/).
 
 ## Installation
 
 ### 1. Conda
 
-A complete kmdiff runtime environment can be built using conda.
-
 ```bash
-git clone https://github.com/tlemane/kmdiff
-cd kmdiff
-conda env create -p /kmdiff-env environment.yml
+conda create -p /kmdiff-env
 conda activate ./kmdiff-env
-```
-
-If VISOR is needed (**kmdiff popsim**):
-```bash
-git clone https://github.com/davidebolo1993/VISOR.git
-cd VISOR
-pip install -r requirements.txt
-python setup.py install
-chmod +x ./scripts/randomregion.r
-cp ./scripts/randomregion.r ../kmdiff-env/bin
+conda install -c bioconda -c tlemane kmdiff
 ```
 
 ### 2. Build from source
@@ -47,53 +75,40 @@ cp ./scripts/randomregion.r ../kmdiff-env/bin
 * cmake >= 3.13
 * gcc >= 8.1 or XCode >= 11.0 or clang >= 7
 * zlib
+* bzip2
+* GSL + Lapacke + OpenBLAS (only with `-p 1`, [see build script](#Build-script)).
 
-```bash
-git clone --recursive https://github.com/tlemane/kmdiff
-mkdir build ; cd build
-cmake .. <args>
+#### Clone
+
+`git clone --recursive https://github.com/tlemane/kmdiff`
+
+#### Build script
+
+```
+kmdiff build script.
+Usage:
+  ./install.sh [-r str] [-k LIST[int]] [-t int] [-c int] [-j int] [-s int] [-p] [-e] [-d] [-h]
+Options:
+  -r <Release|Debug> -> build type {Release}.
+  -k <LIST[INT]>     -> k-mer size {"32 64 96 128"}.
+  -t <0|1|2>         -> tests: 0 = disabled, 1 = compile, 2 = compile and run {2}.
+  -c <1|2|4>         -> byte per count {4}.
+  -j <INT>           -> nb threads {8}.
+  -s <0|1>           -> population stratification correction 0 = disabled, 1 = enabled {1}
+                        (-s 1 requires GSL + lapacke + OpenBLAS)
+  -p                 -> compile with plugins support {disabled}
+  -e                 -> use conda to install compilers/dependencies {disabled}
+  -d                 -> delete cmake cache {disabled}
+  -h                 -> show help.
 ```
 
-* **\<args\>**
-  * `-DBUILD_KMTRICKS_FULL=[ON|OFF]` : Build kmtricks binaries.
-  * `-DCOMPILE_TESTS=[ON|OFF]` : Build kmdiff tests (then run tests with `ctest --verbose`)
-  * `-DSTATIC_BUILD=[ON|OFF]` : Build statically linked binary.
-
-#### Tests
-
-### 3. Static binary
-
-Statically linked binaries will be provided [here](https://github.com/tlemane/kmdiff/releases) when the first stable release will be available.
+If you are unable to install the prerequisites on your system, use `-e`. Compilers and build dependencies will thus be provided by a conda environment.
 
 ## Usage
 
-**Inputs:**
-  * Control read sets.
-  * Case read sets.
+### 1) `kmdiff count` - count k-mers with kmtricks
 
-**Outputs:**
-* Over-represented k-mers in control population.
-* Over-represented k-mers in case population.
-
-```
-USAGE
-  kmdiff [infos|popsim|count|diff|call]
-
-COMMANDS
-  infos  - Show build infos.
-  popsim - Simulate population.
-  count  - Count k-mers with kmtricks.
-  diff   - Differential k-mers analysis.
-  call   - SVs calling from k-mers.
-```
-
-### kmdiff count - count k-mers with kmtricks
-
-```bash
-kmdiff count --file ./inputs.fof --run-dir ./km_run --threads 8
-```
-
-**inputs.fof** (controls must appear first)
+**Input file: one sample per line** (controls must appear first)
 ```
 control1: /path/to/control1_read1.fastq ; /path/to/control1_read2.fastq
 control2: /path/to/control2_read1.fastq ; /path/to/control2_read2.fastq
@@ -101,101 +116,96 @@ case1: /path/to/case1_read1.fastq ; /path/to/case1_read2.fastq
 case2: /path/to/case2_read1.fastq ; /path/to/case2_read2.fastq
 ```
 
+Supported files: fasta/fastq, gzipped or not.
+
+**Options**
 ```
+kmdiff count v1.0.0
+
 DESCRIPTION
   Count k-mers with kmtricks.
 
 USAGE
-  kmdiff count -f/--file <FILE> -d/--run-dir <DIR> [-k/--kmer-size <INT>] [-c/--count-abundance-min <INT>] 
-               [-m/--max-memory <INT>] [--minimizer-type <INT>] [--minimizer-size <INT>] 
-               [--repartition-type <INT>] [--nb-partitions <INT>] [-t/--threads <INT>] 
-               [-v/--verbose <STR>] [-h/--help] [--version] 
+  kmdiff count -f/--file <FILE> -d/--run-dir <DIR> [-k/--kmer-size <INT>] [-c/--hard-min <INT>]
+               [-r/--recurrence-min <INT>] [--minimizer-type <INT>]
+               [--minimizer-size <INT>] [--repartition-type <INT>] [--nb-partitions <INT>]
+               [-t/--threads <INT>] [-v/--verbose <STR>] [-h/--help] [--version]
 
 OPTIONS
   [global]
-    -f --file                - fof that contains path of read files 
-    -d --run-dir             - runtime directory 
-    -k --kmer-size           - size of k-mers [16, 32] {31}
-    -c --count-abundance-min - min abundance for solid k-mers {1}
-    -m --max-memory          - max memory per core (in mb) {4000}
+    -f --file           - fof that contains path of read files
+    -d --run-dir        - output directory.
+    -k --kmer-size      - size of k-mers [8, 127] {31}
+    -c --hard-min       - min abundance to keep a k-mer {1}
+    -r --recurrence-min - min recurrence to keep a k-mer {1}
 
   [advanced performance tweaks]
      --minimizer-type   - minimizer type (0=lexi, 1=freq) {0}
      --minimizer-size   - size of minimizer {10}
      --repartition-type - minimizer repartition (0=unordered, 1=ordered) {0}
-     --nb-partitions    - number of partitions (0=auto) {4}
+     --nb-partitions    - number of partitions (0=auto) {0}
 
   [common]
-    -t --threads - Number of threads. {1}
-    -h --help    - Show this message and exit. [⚑]
-       --version - Show version and exit. [⚑]
-    -v --verbose - Verbosity level [DEBUG|INFO|WARNING|ERROR]. {WARNING}
+    -t --threads - number of threads. {8}
+    -h --help    - show this message and exit. [⚑]
+       --version - show version and exit. [⚑]
+    -v --verbose - Verbosity level [debug|info|warning|error]. {info}
 ```
 
-For details on `kmdiff count` parameters, see [kmtricks documentation](https://github.com/tlemane/kmtricks).
-
-### kmdiff diff - aggregate k-mers and dump the significant ones
-
-```bash
-kmdiff diff --km-run ./km_run --output-dir ./output_diff --nb-controls 2 --nb-cases 2 --threads 8
-```
+### 2) `kmdiff diff` - aggregate k-mers and dump the significant ones
 
 ```
-USAGE
-  kmdiff diff --km-run <DIR> --nb-controls <INT> --nb-cases <INT> [-o/--output-dir <DIR>] 
-              [--significance <FLOAT>] [-c/--correction <STR>] [-t/--threads <INT>] 
-              [-v/--verbose <STR>] [--kff-output] [--in-memory] [-h/--help] [--version] 
+kmdiff diff v1.0.0
 
-OPTIONS
-  [global]
-       --km-run       - kmtricks run directory. 
-    -o --output-dir   - output directory. {./output}
-       --nb-controls  - Number of controls. 
-       --nb-cases     - Number of cases. 
-       --significance - Significance threshold. {0.05}
-    -c --correction   - Significance correction. {bonf}
-       --kff-output   - Output significant k-mers in kff format. [⚑]
-       --in-memory    - Perform correction in memory. [⚑]
-
-  [common]
-    -t --threads - Number of threads. {1}
-    -h --help    - Show this message and exit. [⚑]
-       --version - Show version and exit. [⚑]
-    -v --verbose - Verbosity level [DEBUG|INFO|WARNING|ERROR]. {WARNING}
-```
-
-### kmdiff call - map significant k-mers with bbmap and ... (wip)
-
-```bash
-kmdiff call --reference ./ref.fa --diff-dir ./output_diff
-```
-
-```
 DESCRIPTION
-  SVs calling from k-mers.
+  Differential k-mers analysis.
 
 USAGE
-  kmdiff call -r/--reference <FILE> -d/--diff-dir <DIR> [--seed-size <INT>] [-t/--threads <INT>] 
-              [-v/--verbose <STR>] [-h/--help] [--version] 
+  kmdiff diff -d/--km-run <DIR> -1/--nb-controls <INT> -2/--nb-cases <INT> [-o/--output-dir <DIR>]
+              [-s/--significance <FLOAT>] [-u/--cutoff <INT>] [-c/--correction <STR>]
+              [--gender <FILE>] [--kmer-pca <FLOAT>] [--ploidy <INT>] [--n-pc <INT>]
+              [-t/--threads <INT>] [-v/--verbose <STR>] [-f/--kff-output] [-m/--in-memory]
+              [--keep-tmp] [--pop-correction] [-h/--help] [--version]
 
 OPTIONS
   [global]
-    -r --reference - Reference genome. 
-    -d --diff-dir  - Output directory of kmdiff diff. 
-       --seed-size - Size of seeds for mapping. {10}
+    -d --km-run       - kmtricks run directory.
+    -o --output-dir   - output directory. {./kmdiff_output}
+    -1 --nb-controls  - number of controls.
+    -2 --nb-cases     - number of cases.
+    -s --significance - significance threshold. {0.05}
+    -u --cutoff       - Divide the significance threshold by N.
+                        Since a large number of k-mers are tested, k-mers with p-values too close to the significance
+                        threshold will not pass the last steps of correction.
+                        It allows to discard some k-mers a bit earlier and thus save space and time. {100000}
+    -c --correction   - significance correction. (bonferroni|benjamini|sidak|holm|disabled) {bonferroni}
+    -f --kff-output   - output significant k-mers in kff format. [⚑]
+    -m --in-memory    - in-memory correction. [⚑]
+       --keep-tmp     - keep tmp files. [⚑]
+
+  [population stratification]
+     --pop-correction - apply correction for population stratification. [⚑]
+     --gender         - gender file, one sample per line with the id and the gender (M,F,U), space-separated.
+     --kmer-pca       - proportion of k-mers used for PCA (in [0.0, 0.05]). {0.001}
+     --ploidy         - ploidy level. {2}
+     --n-pc           - number of principal components (in [2, 10]). {2}
 
   [common]
-    -t --threads - Number of threads. {1}
-    -h --help    - Show this message and exit. [⚑]
-       --version - Show version and exit. [⚑]
-    -v --verbose - Verbosity level [DEBUG|INFO|WARNING|ERROR]. {WARNING}
+    -t --threads - number of threads. {8}
+    -h --help    - show this message and exit. [⚑]
+       --version - show version and exit. [⚑]
+    -v --verbose - Verbosity level [debug|info|warning|error]. {info}
 ```
 
-## Simulation
+**Outputs**
+* control significant k-mers: `<output_dir>/control_kmers.[fasta|kff]`
+* case significant k-mers: `<output_dir>/case_kmers.[fasta|kff]`
 
-### kmdiff popsim
+Abundances and p-values are provided in fasta headers.
 
-wip.
+## Testing
+
+An example on a small dataset is available [here](./examples).
 
 ## Reporting an issue
 
@@ -203,8 +213,6 @@ If you encounter a problem, please open an issue with the return of `kmdiff info
 
 ## Contact
 
-Téo Lemane: teo.lemane@inria.fr
-
-Rayan Chikhi: rayan.chikhi@pasteur.fr
-
-Pierre Peterlongo: pierre.peterlongo@inria.fr
+Téo Lemane: teo[dot]lemane[at]inria[dot]fr  
+Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr  
+Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr  

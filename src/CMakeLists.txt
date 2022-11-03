@@ -13,17 +13,31 @@ endforeach()
 
 add_format_project_target("${PROJECT_FILES}")
 
-add_library(kmdifflib ${CPP_FILES})
-add_dependencies(kmdifflib ${DEPS})
+add_library(${PROJECT_NAME} ${CPP_FILES})
+target_link_libraries(${PROJECT_NAME} PUBLIC warning_flags build_type_flags headers links deps)
 
-add_executable(${PROJECT_NAME} main.cpp)
-add_dependencies(${PROJECT_NAME} ${DEPS})
-target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDES})
-target_link_libraries(${PROJECT_NAME} ZLIB::ZLIB kmdifflib)
+add_executable(${PROJECT_NAME}-bin main.cc)
+target_link_libraries(${PROJECT_NAME}-bin PRIVATE ${PROJECT_NAME})
+if (STATIC_BUILD AND NOT APPLE)
+  target_link_libraries(${PROJECT_NAME}-bin PRIVATE -static)
+endif()
+set_target_properties(${PROJECT_NAME}-bin PROPERTIES OUTPUT_NAME kmdiff)
+
+add_compile_definitions(KMD_USE_IRLS)
+
+if(DEV_BUILD)
+  add_compile_definitions(KMD_DEV_MODE)
+endif()
+
+if(WITH_POPSTRAT)
+  add_compile_definitions(WITH_POPSTRAT)
+endif()
+
+if(WITH_PLUGIN)
+  add_compile_definitions(WITH_PLUGIN)
+endif()
 
 if (NOT APPLE)
   target_link_options(${PROJECT_NAME} PUBLIC -export-dynamic)
 endif()
-if (STATIC_BUILD)
-  target_link_options(${PROJECT_NAME} PUBLIC -static)
-endif()
+

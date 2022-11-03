@@ -18,47 +18,45 @@
 
 #pragma once
 
-// std
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 
-#define RECORD(ss, var) ss << #var << " -> " << var << "\n"
+#define KRECORD(ss, var) ss << #var << "=" << var << ","
 
-namespace kmdiff
-{
-enum class COMMAND
-{
-  DIFF,
-  COUNT,
-  INFOS,
-  POPSIM,
-  CALL
-};
+namespace kmdiff {
 
-struct kmdiff_options
-{
-  std::string verbosity{};
-  int nb_threads{1};
-
-#ifdef KMDIFF_DEV_MODE
-  int signal{0};
-#endif
-  std::string global_display()
+  enum class COMMAND
   {
-    std::stringstream ss;
-    ss << "\nOptions:\n";
-    RECORD(ss, verbosity);
-    RECORD(ss, nb_threads);
-#ifdef KMDIFF_DEV_MODE
-    RECORD(ss, signal);
-#endif
+    DIFF,
+    COUNT,
+    INFOS,
+    POPSIM,
+    CALL
+  };
 
-    return ss.str();
-  }
-};
+  struct kmdiff_options
+  {
+    std::string verbosity{};
+    int nb_threads{1};
 
-using kmdiff_options_t = std::shared_ptr<struct kmdiff_options>;
+  #ifdef KMDIFF_DEV_MODE
+    int signal{0};
+  #endif
+    std::string global_display()
+    {
+      std::stringstream ss;
+      ss << "Options: ";
+      KRECORD(ss, verbosity);
+      KRECORD(ss, nb_threads);
+  #ifdef KMDIFF_DEV_MODE
+      KRECORD(ss, signal);
+  #endif
 
-};  // namespace kmdiff
+      return ss.str();
+    }
+  };
+
+  using kmdiff_options_t = std::shared_ptr<struct kmdiff_options>;
+
+}; // end of namespace kmdiff

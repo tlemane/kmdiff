@@ -18,18 +18,15 @@
 
 #pragma once
 
-// std
 #include <iostream>
 #include <memory>
 
-// ext
 #include <bcli/bcli.hpp>
 
-// int
 #include <kmdiff/config.hpp>
 
-namespace kmdiff
-{
-void info_cli(std::shared_ptr<bc::Parser<1>> cli);
+namespace kmdiff {
 
-};
+  void info_cli(std::shared_ptr<bc::Parser<1>> cli);
+
+} // end of namespace kmdiff

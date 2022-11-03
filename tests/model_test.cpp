@@ -26,6 +26,7 @@ TEST(model, convert)
 {
   EXPECT_EQ(correction_type_str(CorrectionType::NOTHING), "NOTHING");
   EXPECT_EQ(correction_type_str(CorrectionType::BONFERRONI), "BONFERRONI");
+  EXPECT_EQ(correction_type_str(CorrectionType::BENJAMINI), "BENJAMINI");
 }
 
 TEST(model, model)
@@ -35,9 +36,8 @@ TEST(model, model)
   std::vector<uint8_t> v {2, 2, 0, 10, 0, 1, 0, 0, 42, 2};
 
   EXPECT_FLOAT_EQ(model.compute_mean(v), 5.9);
-  std::tuple<double, size_t> t = std::make_tuple(5.9, 6);
   auto [mean, n] = model.compute_mean_e(v);
-  
+
   EXPECT_FLOAT_EQ(mean, 5.9);
   EXPECT_EQ(n, 6);
 }
@@ -57,8 +57,8 @@ TEST(model, poisson_likelihood)
   for (size_t i=0; i<nb_case; i++)
     v.push_back(100);
 
-  PoissonLikelihood<100000> p(nb_control, nb_case, ct, ct);
-  
+  PoissonLikelihood<100000> p(nb_control, nb_case, ct, ct, 10);
+
   Range<uint32_t> r1(v, 0, nb_control);
   Range<uint32_t> r2(v, nb_control, nb_case);
 
@@ -80,15 +80,3 @@ TEST(model, poisson_likelihood)
   }
 }
 
-TEST(model, icorrector)
-{
-  ICorrector c;
-  EXPECT_TRUE(c.apply(0.0));
-}
-
-TEST(model, bonferroni)
-{
-  Bonferroni b(0.05, 100);
-  EXPECT_TRUE(b.apply(0.0004));
-  EXPECT_FALSE(b.apply(0.0006));
-}
