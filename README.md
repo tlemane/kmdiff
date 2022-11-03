@@ -10,7 +10,7 @@ This is a work in progress, it is not yet fully usable.
 
 ### Build dependencies
 
-For conveniance, all kmdiff build dependencies are included in [thirdparty directory](./thirdparty/).
+For convenience, all kmdiff build dependencies are included in [thirdparty directory](./thirdparty/).
 
 ### Runtime depencencies
 
