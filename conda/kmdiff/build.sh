@@ -21,11 +21,13 @@
 mkdir build-conda
 cd build-conda
 
-cmake .. -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DWITH_KMTRICKS=OFF -DWITH_POPSTRAT=ON -DCONDA_BUILD=ON
+cmake .. -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DWITH_KMTRICKS=OFF -DWITH_POPSTRAT=ON -DCONDA_BUILD=ON -DNATIVE_BUILD=OFF
 
 make -j4
 
 mkdir -p $PREFIX/bin
+
+cd ..
 
 cp -r ./build-conda/bin/kmdiff $PREFIX/bin
 cp -r ./build-conda/bin/smartpca $PREFIX/bin
