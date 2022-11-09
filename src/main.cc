@@ -24,6 +24,7 @@
 #include <kmdiff/config.hpp>
 #include <kmdiff/signals.hpp>
 #include <kmdiff/utils.hpp>
+#include <kmdiff/kmtricks_utils.hpp>
 
 #ifndef KMER_LIST
   #define KMER_LIST KMD_KMER_LIST
@@ -62,10 +63,6 @@ int main(int argc, char* argv[])
   cerr_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
   spdlog::set_default_logger(cerr_logger);
 
-  std::size_t ksize {0};
-  if (cmd == COMMAND::DIFF)
-    ksize = 31;
-
   try
   {
     if (cmd == COMMAND::COUNT)
@@ -74,7 +71,8 @@ int main(int argc, char* argv[])
     }
     else if (cmd == COMMAND::DIFF)
     {
-      km::const_loop_executor<0, KMER_N>::exec<main_diff_exec>(ksize, options);
+      auto c = get_kmtricks_config(std::static_pointer_cast<struct diff_options>(options)->kmtricks_dir);
+      km::const_loop_executor<0, KMER_N>::exec<main_diff_exec>(c.kmer_size, options);
       //main_diff(options);
     }
     else if (cmd == COMMAND::INFOS)
