@@ -3,13 +3,16 @@
 ![License](http://img.shields.io/:license-affero-blue.svg)
 [![kmdiff](https://github.com/tlemane/kmdiff/actions/workflows/kmdiff.yml/badge.svg)](https://github.com/tlemane/kmdiff/actions/workflows/kmdiff.yml)
 
+## Citation
+Lemane, Téo, Rayan Chikhi, and Pierre Peterlongo. "kmdiff, large-scale and user-friendly differential k-mer analyses." [Bioinformatics 38.24 (2022): 5443-5445](https://academic.oup.com/bioinformatics/article/38/24/5443/6782954?login=false)
+
 ## Rationale
 
 kmdiff provides differential k-mers analysis between two populations (control and case). Each population is represented by a set of short-read sequencing. Outputs are differentially represented k-mers between controls and cases.
 
 Statistical methods used in kmdiff are from:
 * Rahman, Atif, Ingileif Hallgrímsdóttir, Michael Eisen, and Lior Pachter. "Association mapping from sequencing reads using k-mers." Elife 7 (2018): e32920. https://doi.org/10.7554/eLife.32920.001
-* Mehrab Z, Mobin J, Tahmid IA, Rahman A (2021) Efficient association mapping from k-mers—An application in finding sex-specific sequences. PLOS ONE 16(1): e0245058. https://doi.org/10.1371/journal.pone.0245058.
+* Mehrab Z, Mobin J, Tahmid IA, Rahman A (2021) Efficient association mapping from k-mers—An application in finding sex-specific sequences. PLOS ONE 16(1): e0245058. https://doi.org/10.1371/journal.pone.0245058
 * Patterson N, Price AL, Reich D (2006) Population Structure and Eigenanalysis. PLOS Genetics 2(12): e190. https://doi.org/10.1371/journal.pgen.0020190
 * Price, A., Patterson, N., Plenge, R. et al. Principal components analysis corrects for stratification in genome-wide association studies. Nat Genet 38, 904–909 (2006). https://doi.org/10.1038/ng1847
 
