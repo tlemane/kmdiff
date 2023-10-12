@@ -1,9 +1,9 @@
-FROM ubuntu:latest
+FROM ubuntu:20.04
 MAINTAINER Téo Lemane teo.lemane@inria.fr
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get -y dist-upgrade \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends && apt-get clean
 
 RUN apt-get install -y git cmake gcc g++ libgsl-dev libopenblas-dev \
