@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 MAINTAINER Téo Lemane teo.lemane@inria.fr
 
 ENV DEBIAN_FRONTEND=noninteractive
