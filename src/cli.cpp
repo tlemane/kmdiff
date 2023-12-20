@@ -251,6 +251,10 @@ namespace kmdiff {
         ->as_flag()
         ->setter(options->keep_tmp);
 
+    diff_cmd->add_param("--save-sk", "build the matrix of significant k-mers.")
+        ->as_flag()
+        ->setter(options->save_sk);
+
     #ifdef WITH_PLUGIN
       diff_cmd->add_group("custom model", "");
 

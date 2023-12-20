@@ -40,6 +40,8 @@ namespace kmdiff {
 
     std::size_t total_kmers;
 
+    bool save_sk {false};
+
     std::string display()
     {
       std::stringstream ss;

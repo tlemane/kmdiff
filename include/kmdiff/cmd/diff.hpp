@@ -100,7 +100,7 @@ namespace kmdiff {
 
     global_merge<KSIZE, DMAX_C> merger(
       part_paths, ab_mins, model, accumulators, config.kmer_size, opt->nb_controls,
-      opt->nb_cases, opt->threshold/opt->cutoff, opt->nb_threads, sampler);
+      opt->nb_cases, opt->threshold/opt->cutoff, opt->nb_threads, sampler, opt->save_sk ? km::KmDir::get().m_matrix_storage : std::string(""));
 
     std::size_t total_kmers = merger.merge();
     auto [sign_controls, sign_cases] = merger.signs();

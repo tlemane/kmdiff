@@ -51,13 +51,15 @@ namespace kmdiff {
                     double threshold,
                     std::size_t controls,
                     std::size_t cases,
-                    std::size_t partition)
+                    std::size_t partition,
+                    std::shared_ptr<km::MatrixWriter<65536>> smat = nullptr)
         : m_model(model),
           m_acc(acc),
           m_threshold(threshold),
           m_nb_controls(controls),
           m_nb_cases(cases),
-          m_part(partition)
+          m_part(partition),
+          m_smat(smat)
       {
         m_counts.resize(m_nb_controls + m_nb_cases, 0);
       }
@@ -77,6 +79,11 @@ namespace kmdiff {
         {
 
           km::Kmer<KSIZE> kmer_ = kmer;
+
+          if (m_smat)
+          {
+            m_smat->template write<KSIZE, CMAX>(kmer_, counts);
+          }
 
           #ifndef WITH_POPSTRAT
             KmerSign<KSIZE> ks(std::move(kmer_), p_value, sign, mean_ctr, mean_case);
@@ -115,6 +122,7 @@ namespace kmdiff {
       std::vector<double> m_counts;
       std::size_t m_sign_controls {0};
       std::size_t m_sign_cases {0};
+      std::shared_ptr<km::MatrixWriter<65536>> m_smat;
   };
 
   template<std::size_t KSIZE, std::size_t CMAX>
@@ -182,7 +190,8 @@ namespace kmdiff {
                    std::size_t nb_cases,
                    double threshold,
                    std::size_t nb_threads,
-                   std::shared_ptr<Sampler<CMAX>> sampler)
+                   std::shared_ptr<Sampler<CMAX>> sampler,
+                   const std::string& smat_path = "")
         : m_part_paths(partition_paths),
           m_ab_thresholds(ab_thresholds),
           m_model(model),
@@ -192,7 +201,8 @@ namespace kmdiff {
           m_cases(nb_cases),
           m_threshold(threshold),
           m_nb_threads(nb_threads),
-          m_sampler(sampler)
+          m_sampler(sampler),
+          m_smat_path(smat_path)
       {}
 
       std::size_t merge()
@@ -228,10 +238,20 @@ namespace kmdiff {
 
             km::imo_t<KSIZE, CMAX> diff {nullptr};
 
+            std::shared_ptr<km::MatrixWriter<65536>> smat = nullptr;
+
+            if (!this->m_smat_path.empty())
+            {
+              std::string mpath = fmt::format("{}/matrix_{}.count.lz4", m_smat_path, p);
+              smat = std::make_shared<km::MatrixWriter<65536>>(
+                mpath , this->m_kmer_size, 4, this->m_controls + this->m_cases, 0, p, true
+              );
+            }
+
             if (!m_sampler)
               diff = std::make_shared<diff_observer<KSIZE, CMAX>>(
                 this->m_model, this->m_accs[p], this->m_threshold,
-                this->m_controls, this->m_cases, p);
+                this->m_controls, this->m_cases, p, smat);
             else
               diff = std::make_shared<diff_observer_strat<KSIZE, CMAX>>(
                 this->m_model, this->m_accs[p], this->m_threshold,
@@ -296,6 +316,7 @@ namespace kmdiff {
         std::vector<size_t> m_sign_cases;
 
         std::shared_ptr<Sampler<CMAX>> m_sampler {nullptr};
+        const std::string m_smat_path;
   };
 
 } // end of namespace kmdiff
