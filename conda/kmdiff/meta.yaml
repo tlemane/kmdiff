@@ -1,4 +1,4 @@
-{% set version = "1.0.1" %}
+{% set version = "1.1.0" %}
 
 package:
   name: kmdiff
@@ -25,7 +25,7 @@ requirements:
     - gsl
     - openblas
     - liblapacke
-    - kmtricks
+    - kmtricks==1.2.0
 
 about:
   home: https://github.com/tlemane/kmdiff

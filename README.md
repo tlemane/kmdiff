@@ -109,6 +109,8 @@ If you are unable to install the prerequisites on your system, use `-e`. Compile
 
 ## Usage
 
+If you have already built a matrix with *kmtricks*, you can skip the first step `kmdiff count`. Note that the `--hist` parameter is required when constructing the matrix in order to be compatible with `kmdiff diff`.
+
 ### 1) `kmdiff count` - count k-mers with kmtricks
 
 **Input file: one sample per line** (controls must appear first)
@@ -123,7 +125,7 @@ Supported files: fasta/fastq, gzipped or not.
 
 **Options**
 ```
-kmdiff count v1.0.0
+kmdiff count v1.1.0
 
 DESCRIPTION
   Count k-mers with kmtricks.
@@ -158,7 +160,7 @@ OPTIONS
 ### 2) `kmdiff diff` - aggregate k-mers and dump the significant ones
 
 ```
-kmdiff diff v1.0.0
+kmdiff diff v1.1.0
 
 DESCRIPTION
   Differential k-mers analysis.
@@ -185,6 +187,7 @@ OPTIONS
     -f --kff-output   - output significant k-mers in kff format. [⚑]
     -m --in-memory    - in-memory correction. [⚑]
        --keep-tmp     - keep tmp files. [⚑]
+       --save-sk      - build the matrix of significant k-mers. [⚑]
 
   [population stratification]
      --pop-correction - apply correction for population stratification. [⚑]
@@ -204,6 +207,8 @@ OPTIONS
 * control significant k-mers: `<output_dir>/control_kmers.[fasta|kff]`
 * case significant k-mers: `<output_dir>/case_kmers.[fasta|kff]`
 
+`--save-sk`: Outputs a matrix with the significant k-mers before correction. You can dump it in text with `kmtricks aggregate --run-dir <output-dir>/positive_kmer_matrix --matrix kmer --cpr-in`.
+
 Abundances and p-values are provided in fasta headers.
 
 ## Testing
@@ -216,6 +221,6 @@ If you encounter a problem, please open an issue with the return of `kmdiff info
 
 ## Contact
 
-Téo Lemane: teo[dot]lemane[at]inria[dot]fr  
-Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr  
-Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr  
+Téo Lemane: teo[dot]lemane[at]inria[dot]fr
+Rayan Chikhi: rayan[dot]chikhi[at]pasteur[dot]fr
+Pierre Peterlongo: pierre[dot]peterlongo[at]inria[dot]fr
