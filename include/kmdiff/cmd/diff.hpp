@@ -56,10 +56,11 @@ namespace kmdiff {
     fs::create_directory(to + "/repartition_gatb");
     fs::create_directory(to + "/config_gatb");
 
-    fs::copy(from + "/config_gatb", to + "/config_gatb", fs::copy_options::recursive);
-    fs::copy(from + "/repartition_gatb", to + "/repartition_gatb", fs::copy_options::recursive);
-    fs::copy(from + "/options.txt", to, fs::copy_options::recursive);
-    fs::copy(from + "/kmtricks.fof", to, fs::copy_options::recursive);
+    auto coptions = fs::copy_options::recursive | fs::copy_options::overwrite_existing;
+    fs::copy(from + "/config_gatb", to + "/config_gatb", coptions);
+    fs::copy(from + "/repartition_gatb", to + "/repartition_gatb", coptions);
+    fs::copy(from + "/options.txt", to, coptions);
+    fs::copy(from + "/kmtricks.fof", to, coptions);
   }
 
   template<std::size_t KSIZE>
