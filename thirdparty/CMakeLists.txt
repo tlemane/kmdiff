@@ -55,7 +55,9 @@ endif()
 
 target_include_directories(headers SYSTEM INTERFACE
   ${THIRD_DIR}/kmtricks/include
-  ${THIRD_DIR}/kmtricks/thirdparty/TurboPFor-Integer-Compression
+  ${THIRD_DIR}/kmtricks/thirdparty/TurboPFor-Integer-Compression/include
+  ${THIRD_DIR}/kmtricks/thirdparty/bitpacker/include
+  ${THIRD_DIR}/kmtricks/thirdparty/span-lite/include
   ${THIRD_BINDIR}/KMTRICKS/src/KMTRICKS-build/include
 )
 

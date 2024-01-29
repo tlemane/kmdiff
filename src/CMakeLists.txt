@@ -17,6 +17,8 @@ add_library(${PROJECT_NAME} ${CPP_FILES})
 target_link_libraries(${PROJECT_NAME} PUBLIC warning_flags build_type_flags headers links deps)
 
 add_executable(${PROJECT_NAME}-bin main.cc)
+target_link_libraries(${PROJECT_NAME}-bin PRIVATE headers)
+
 target_link_libraries(${PROJECT_NAME}-bin PRIVATE ${PROJECT_NAME})
 if (STATIC_BUILD AND NOT APPLE)
   target_link_libraries(${PROJECT_NAME}-bin PRIVATE -static)
