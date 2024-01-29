@@ -49,6 +49,19 @@
 
 namespace kmdiff {
 
+  inline void copy_kdir(const std::string& from, const std::string& to)
+  {
+    fs::create_directory(to);
+    fs::create_directory(to + "/matrices");
+    fs::create_directory(to + "/repartition_gatb");
+    fs::create_directory(to + "/config_gatb");
+
+    fs::copy(from + "/config_gatb", to + "/config_gatb", fs::copy_options::recursive);
+    fs::copy(from + "/repartition_gatb", to + "/repartition_gatb", fs::copy_options::recursive);
+    fs::copy(from + "/options.txt", to, fs::copy_options::recursive);
+    fs::copy(from + "/kmtricks.fof", to, fs::copy_options::recursive);
+  }
+
   template<std::size_t KSIZE>
   std::size_t do_diff(diff_options_t opt,
                const kmtricks_config_t& config,
@@ -61,8 +74,30 @@ namespace kmdiff {
     spdlog::info("Process partitions");
 
     std::vector<std::vector<std::string>> part_paths;
-    for (std::size_t i = 0; i < config.nb_partitions; i++)
-      part_paths.push_back(km::KmDir::get().get_files_to_merge(i, true, km::KM_FILE::KMER));
+    std::vector<std::string> matrix_paths;
+
+    for (const auto& entry: fs::directory_iterator(km::KmDir::get().m_matrix_storage))
+    {
+      if (fs::exists(entry.path()))
+      {
+        matrix_paths.push_back(entry.path().string());
+      }
+    }
+
+    bool from_matrix = false;
+
+    if (matrix_paths.empty())
+    {
+      for (std::size_t i = 0; i < config.nb_partitions; i++)
+      {
+        part_paths.push_back(km::KmDir::get().get_files_to_merge(i, true, km::KM_FILE::KMER));
+      }
+    }
+    else
+    {
+      from_matrix = true;
+      std::ofstream out_opt_c(km::KmDir::get().m_root + "/kmdiff-count.opt");
+    }
 
     for (std::size_t i = 0; i < accumulators.size(); i++)
     {
@@ -98,11 +133,25 @@ namespace kmdiff {
       }
     #endif
 
+    std::string sign_matrix_dir = fmt::format("{}/positive_kmer_matrix", opt->output_directory);
+
+    if (opt->save_sk)
+    {
+      copy_kdir(km::KmDir::get().m_root, sign_matrix_dir);
+      sign_matrix_dir += "/matrices";
+    }
+
     global_merge<KSIZE, DMAX_C> merger(
       part_paths, ab_mins, model, accumulators, config.kmer_size, opt->nb_controls,
-      opt->nb_cases, opt->threshold/opt->cutoff, opt->nb_threads, sampler, opt->save_sk ? km::KmDir::get().m_matrix_storage : std::string(""));
+      opt->nb_cases, opt->threshold/opt->cutoff, opt->nb_threads, sampler, opt->save_sk ? sign_matrix_dir : std::string(""));
 
-    std::size_t total_kmers = merger.merge();
+    std::size_t total_kmers = 0;
+
+    if (from_matrix)
+      total_kmers = merger.merge(matrix_paths);
+    else
+      total_kmers = merger.merge();
+
     auto [sign_controls, sign_cases] = merger.signs();
 
     spdlog::info("Partitions processed ({})", merge_time.formatted());

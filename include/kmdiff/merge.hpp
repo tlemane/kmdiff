@@ -178,6 +178,35 @@ namespace kmdiff {
   };
 
   template<std::size_t KSIZE, std::size_t CMAX>
+  class matrix_proxy
+  {
+
+    using count_type = typename km::selectC<CMAX>::type;
+
+    public:
+
+      matrix_proxy(const std::string& matrix_path, std::size_t nb_samples)
+        : m_path(matrix_path), m_nb_samples(nb_samples)
+      {
+
+      }
+
+      void merge(std::shared_ptr<km::IMergeObserver<KSIZE, CMAX>> obs)
+      {
+        km::Kmer<KSIZE> k;
+        std::vector<count_type> cv(m_nb_samples);
+
+        km::MatrixReader mr(m_path);
+
+        while (mr.template read<KSIZE, CMAX>(k, cv))
+          obs->process(k, cv);
+      }
+    private:
+      std::string m_path;
+      std::size_t m_nb_samples;
+  };
+
+  template<std::size_t KSIZE, std::size_t CMAX>
   class global_merge
   {
     public:
@@ -286,6 +315,89 @@ namespace kmdiff {
 
         return std::accumulate(total_kmers.begin(), total_kmers.end(), 0ULL);
       }
+
+      std::size_t merge(const std::vector<std::string>& paths)
+      {
+        ThreadPool pool(m_nb_threads);
+        const std::size_t size = paths.size();
+
+        std::vector<size_t> total_kmers(size);
+
+        m_nb_signs.resize(size, 0);
+        m_sign_controls.resize(size, 0);
+        m_sign_cases.resize(size, 0);
+
+        std::exception_ptr ep = nullptr;
+
+        indicators::ProgressBar* pb = nullptr;
+
+        if ((spdlog::get_level() != spdlog::level::debug) && isatty_stderr())
+        {
+          pb = get_progress_bar("progress", size, 50, indicators::Color::white, false);
+          pb->set_progress(0);
+          pb->print_progress();
+        }
+
+        for (std::size_t p = 0; p < size; p++)
+        {
+          auto partition_merger = [&ep, &total_kmers, p, pb, paths, this](int id) {
+            spdlog::debug("Process partition {}.", p);
+            Timer mp_timer;
+
+            matrix_proxy<KSIZE, CMAX> km_merge(paths[p], m_controls + m_cases);
+
+            km::imo_t<KSIZE, CMAX> diff {nullptr};
+
+            std::shared_ptr<km::MatrixWriter<65536>> smat = nullptr;
+
+            if (!this->m_smat_path.empty())
+            {
+              std::string mpath = fmt::format("{}/matrix_{}.count.lz4", m_smat_path, p);
+              smat = std::make_shared<km::MatrixWriter<65536>>(
+                mpath , this->m_kmer_size, 4, this->m_controls + this->m_cases, 0, p, true
+              );
+            }
+
+            if (!m_sampler)
+              diff = std::make_shared<diff_observer<KSIZE, CMAX>>(
+                this->m_model, this->m_accs[p], this->m_threshold,
+                this->m_controls, this->m_cases, p, smat);
+            else
+              diff = std::make_shared<diff_observer_strat<KSIZE, CMAX>>(
+                this->m_model, this->m_accs[p], this->m_threshold,
+                this->m_controls, this->m_cases, this->m_sampler, p);
+
+            try { km_merge.merge(diff); } catch (...) { ep = std::current_exception(); }
+
+            total_kmers[p] = dynamic_cast<diff_observer<KSIZE, CMAX>*>(diff.get())->total();
+            this->m_nb_signs[p] = dynamic_cast<diff_observer<KSIZE, CMAX>*>(diff.get())->nb_sign();
+
+            auto [co, ca] = dynamic_cast<diff_observer<KSIZE, CMAX>*>(diff.get())->nb_signs();
+
+            this->m_sign_controls[p] += co;
+            this->m_sign_cases[p] += ca;
+
+            this->m_accs[p]->finish();
+
+            spdlog::debug("Partition {} processed. ({})", p, mp_timer.formatted());
+            if (pb)
+              pb->tick();
+          };
+
+          pool.add_task(partition_merger);
+        }
+
+        pool.join_all();
+
+        delete pb;
+
+        if (ep != nullptr)
+          rethrow_exception(ep);
+
+        return std::accumulate(total_kmers.begin(), total_kmers.end(), 0ULL);
+      }
+
+
 
       size_t nb_sign() const
       {

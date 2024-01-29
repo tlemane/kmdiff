@@ -30,7 +30,13 @@ namespace kmdiff {
   {
     kmtricks_config_t config;
 
-    const std::string config_path = fmt::format("{}/kmdiff-count.opt", run_dir);
+    std::string config_path = fmt::format("{}/kmdiff-count.opt", run_dir);
+    std::string abs_str = "abundance_min";
+    if (!fs::exists(config_path))
+    {
+      config_path = fmt::format("{}/options.txt", run_dir);
+      abs_str = "c_ab_min";
+    }
 
     std::ifstream in_config(config_path, std::ios::in);
     for (std::string line; std::getline(in_config, line);)
@@ -39,9 +45,11 @@ namespace kmdiff {
       {
         for (auto&& o : bc::utils::split(line, ','))
         {
+          o = bc::utils::trim(o);
+
           if (bc::utils::contains(o, "kmer_size"))
             config.kmer_size = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
-          if (bc::utils::contains(o, "abundance_min"))
+          if (bc::utils::contains(o, abs_str))
             config.abundance_min = bc::utils::lexical_cast<size_t>(bc::utils::split(o, '=')[1]);
         }
       }
