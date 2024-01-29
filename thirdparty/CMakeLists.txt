@@ -37,8 +37,6 @@ if (WITH_KMTRICKS)
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/kmtricks
     CMAKE_ARGS "-DKMER_LIST=${KMER_LIST_KM}" "-DMAX_C=${MAX_C}"
     INSTALL_COMMAND ""
-    LOG_CONFIGURE ON
-    LOG_BUILD ON
   )
 else()
   ExternalProject_Add(
